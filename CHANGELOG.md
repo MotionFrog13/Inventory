@@ -2,7 +2,9 @@
 
 Seluruh perubahan dan catatan rilis untuk proyek **Inventory** didokumentasikan di berkas ini.
 
-## [Unreleased]
+## [2.2.0] - 2026-10-01
+> ℹ️ **Upgrade dari 2.1.0**: tidak ada migrasi database. Dokumen BAP lama di `public/uploads` tetap dapat dibuka (kini lewat cek akses); memindahkannya ke `uploads/` bersifat opsional. Tautan `/uploads/...` kini mewajibkan login.
+
 ### 🐳 Docker Satu Kontainer — Dev & Produksi, Satu Klik
 - **Satu kontainer** berisi PostgreSQL 15 dan aplikasi (`Dockerfile`, target `dev` dan `prod`); proses diatur `docker/entrypoint.sh` — inisialisasi database, migrasi otomatis, dan shutdown PostgreSQL yang bersih.
 - **Launcher satu klik**: `docker-dev.bat` / `docker-prod.bat` (Windows, menyalakan Docker Desktop bila perlu dan membuka browser) serta `docker/launch.sh dev|prod` (macOS/Linux), dengan aksi `stop`, `logs`, dan `seed` (dev).
