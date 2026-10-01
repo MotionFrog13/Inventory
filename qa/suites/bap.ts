@@ -1,6 +1,6 @@
 import fs from "fs";
-import path from "path";
 import {
+  type AccountKey,
   BASE_URL,
   fixtures,
   headersFor,
@@ -132,29 +132,63 @@ export async function run() {
       throw new Error("No BAP file URL found on asset. Previous BAP submission/approval might have failed.");
     }
 
-    const localSavedPath = path.join(process.cwd(), "public", fileUrl);
-    const fileExists = fs.existsSync(localSavedPath);
-    const isWebp = fileUrl.endsWith(".webp");
+    // Diunduh lewat HTTP, bukan dibaca dari disk: berkas tersimpan di luar
+    // public/ (UPLOAD_DIR server) dan hanya dilayani route ber-cek-akses.
+    const fileRes = await fetch(`${BASE_URL}${fileUrl}`, { headers: headersFor("ADMIN_IT") });
+    const contentType = fileRes.headers.get("content-type");
+    const isWebp = fileUrl.endsWith(".webp") && contentType === "image/webp";
     const inYearMonth = /^\/uploads\/bap\/\d{4}\/\d{2}\//.test(fileUrl);
     let width = 0;
     let height = 0;
 
-    if (fileExists && isWebp) {
+    if (fileRes.status === 200 && isWebp) {
       const sharp = (await import("sharp")).default;
-      const metadata = await sharp(localSavedPath).metadata();
+      const metadata = await sharp(Buffer.from(await fileRes.arrayBuffer())).metadata();
       width = metadata.width || 0;
       height = metadata.height || 0;
     }
 
-    const passed = fileExists && isWebp && inYearMonth && width <= 1920 && height <= 1920 && width > 0;
+    const passed = fileRes.status === 200 && isWebp && inYearMonth && width <= 1920 && height <= 1920 && width > 0;
     recordResult(
       "FILE-02",
       "Image Upload: server-side compression, dimensions <= 1920px, saved as WebP in YYYY/MM structure",
       passed,
       passed
         ? `WebP saved: ${fileUrl}, dimensions: ${width}x${height}`
-        : `Failed. FileExists: ${fileExists}, URL: ${fileUrl}, isWebp: ${isWebp}, dimensions: ${width}x${height}`
+        : `Failed. Download: ${fileRes.status} (${contentType}), URL: ${fileUrl}, isWebp: ${isWebp}, dimensions: ${width}x${height}`
     );
+
+    // TC-FILE-03 — dokumen BAP mengikuti cakupan aset pemiliknya (IT, Bogor)
+    await runTest("FILE-03", "BAP documents are served only to users who can access the asset", async () => {
+      const get = (url: string, key?: AccountKey) =>
+        fetch(`${BASE_URL}${url}`, { headers: key ? headersFor(key) : {}, redirect: "manual" });
+      const owner = await get(fileUrl, "STAFF_IT");
+      const superAdmin = await get(fileUrl, "SUPER_ADMIN");
+      const anonymous = await get(fileUrl);
+      const anonymousApi = await get(fileUrl.replace(/^\/uploads\//, "/api/uploads/"));
+      const otherDivision = await get(fileUrl, "ADMIN_KITCHEN");
+      const otherBranch = await get(fileUrl, "ADMIN_IT_JAKARTA");
+      const otherOrg = await get(fileUrl, "B_SUPER_ADMIN");
+      const traversal = await get("/uploads/bap/..%2F..%2Fpackage.json", "SUPER_ADMIN");
+      const divisionError = (await safeJson(otherDivision))?.error;
+      const branchError = (await safeJson(otherBranch))?.error;
+
+      const passed =
+        owner.status === 200 &&
+        superAdmin.status === 200 &&
+        anonymous.status === 307 && (anonymous.headers.get("location") ?? "").includes("/login") &&
+        anonymousApi.status === 401 &&
+        otherDivision.status === 403 && divisionError === "Unauthorized cross-division access detected." &&
+        otherBranch.status === 403 && branchError === "Unauthorized cross-branch access detected." &&
+        otherOrg.status === 404 &&
+        traversal.status === 404;
+      return {
+        passed,
+        notes:
+          `owner=${owner.status} super=${superAdmin.status} anon=${anonymous.status} anonApi=${anonymousApi.status} ` +
+          `otherDivision=${otherDivision.status} otherBranch=${otherBranch.status} otherOrg=${otherOrg.status} traversal=${traversal.status}`,
+      };
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     recordResult("FILE-02", "Image Upload: server-side compression, dimensions <= 1920px, saved as WebP in YYYY/MM structure", false, message);

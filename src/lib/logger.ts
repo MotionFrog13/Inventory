@@ -11,8 +11,10 @@ export interface ActivityActor {
 }
 
 /**
- * Catat log aktivitas ke organisasi pelaku. IP diturunkan dari header
- * `x-forwarded-for` / `x-real-ip` bila `request` diberikan.
+ * Catat log aktivitas ke organisasi pelaku. IP diturunkan dari header bila
+ * `request` diberikan: `cf-connecting-ip` lebih dulu — di belakang Cloudflare
+ * Tunnel nilainya diisi Cloudflare, sedangkan entri pertama `x-forwarded-for`
+ * dapat dikirim pengunjung sendiri — lalu `x-forwarded-for` / `x-real-ip`.
  */
 export async function writeActivityLog(
   actor: ActivityActor,
@@ -23,7 +25,11 @@ export async function writeActivityLog(
   try {
     let ipAddress: string | null = null;
     if (request) {
-      ipAddress = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || null;
+      ipAddress =
+        request.headers.get("cf-connecting-ip") ||
+        request.headers.get("x-forwarded-for") ||
+        request.headers.get("x-real-ip") ||
+        null;
       if (ipAddress && ipAddress.includes(",")) {
         ipAddress = ipAddress.split(",")[0].trim();
       }

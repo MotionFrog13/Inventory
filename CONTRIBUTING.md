@@ -10,7 +10,12 @@ Thanks for your interest in improving Inventory! Bug reports, documentation fixe
 
 ## Development setup
 
-Follow the [Quick start](README.md#quick-start). For the QA runner, set `APP_MODE="saas"` in `.env` and reseed (`npx prisma db seed`) so the second test organization exists.
+Pick one of the two setups from the [Quick start](README.md#quick-start):
+
+- **Docker (no local Node.js or PostgreSQL):** run `docker-dev.bat` on Windows or `bash docker/launch.sh dev` elsewhere. Your working copy is mounted into the container with hot reload, and the database is reachable from the host at `localhost:55432` (`postgres` / `postgres`). See [docs/docker.md](docs/docker.md).
+- **On the host:** Node.js 20.19+/22.12+/24+ with your own PostgreSQL and `.env`.
+
+The QA runner needs `APP_MODE="saas"` and fresh seed data so the second test organization exists. On the host, set it in `.env` and run `npx prisma db seed`. With Docker, set `DEV_APP_MODE=saas` in `docker/.env`, restart, and run `docker-dev.bat seed`. Then run the QA runner from the host with `DATABASE_URL` pointing at the container database, because some suites write to the database directly.
 
 ## Architecture rules
 
@@ -20,6 +25,7 @@ Inventory is multi-tenant, so a few rules are non-negotiable. The full rulebook 
 - **Scope with the helpers in `src/lib/scope.ts`** (`assetScopeWhere`, `transferScopeWhere`, `assetAccessDenied`, …) instead of building division/outlet filters by hand.
 - **Every new model needs `organizationId`** and composite foreign keys `(organizationId, …)` for its required relations.
 - **Stock changes go through `src/lib/stock.ts`** so the invariant `quantity = active + broken + repair + retired + reserved` always holds.
+- **Uploaded files never go to `public/`.** Store them through `src/lib/uploads.ts` (`UPLOAD_DIR`); they are served only by `/api/uploads`, which applies the owning asset's access check.
 - Responses use `{ success, data | error, message }`; another organization's data answers `404`, another division/outlet answers `403`.
 
 ## Checks before opening a pull request
@@ -34,6 +40,8 @@ npm run qa            # with `npm run dev` running and APP_MODE="saas"
 ```
 
 Add or update tests for behavior you change — the QA suites live in `qa/suites/`, unit and integration tests in `tests/`.
+
+If you touch the `Dockerfile`, `docker/`, startup, migrations, or seeding, also run `docker-dev.bat` and `docker-prod.bat` (or `docker/launch.sh dev|prod`) on a clean volume (`docker compose -f docker/compose.<mode>.yml down -v` first). For Cloudflare Tunnel changes, check `docker-tunnel.bat` and a deliberately wrong `CLOUDFLARE_TUNNEL_TOKEN`: the app must keep running. `.gitattributes` keeps `*.sh` files LF and `*.bat` files CRLF — keep it that way, or the container and the Windows launchers break.
 
 ## Commits and pull requests
 

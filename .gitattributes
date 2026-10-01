@@ -1,0 +1,4 @@
+# Skrip shell dijalankan di Linux (kontainer) — wajib LF meski di-checkout di Windows.
+*.sh text eol=lf
+# cmd.exe membutuhkan CRLF agar label & goto pada .bat terbaca benar.
+*.bat text eol=crlf

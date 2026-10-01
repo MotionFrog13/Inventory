@@ -12,6 +12,7 @@ import {
   moveStock,
   stockUpdateData,
 } from "@/lib/stock";
+import { UPLOAD_ROOT, uploadPath } from "@/lib/uploads";
 import path from "path";
 import fs from "fs/promises";
 import { randomUUID } from "crypto";
@@ -107,11 +108,12 @@ export async function POST(
       );
     }
 
-    // Buat folder penyimpanan: /public/uploads/bap/YYYY/MM/
+    // Buat folder penyimpanan: <UPLOAD_ROOT>/bap/YYYY/MM/ — di luar public/,
+    // dilayani hanya lewat /api/uploads dengan cek akses (src/lib/uploads.ts).
     const now = new Date();
     const year = now.getFullYear().toString();
     const month = String(now.getMonth() + 1).padStart(2, "0");
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "bap", year, month);
+    const uploadDir = path.join(UPLOAD_ROOT, "bap", year, month);
     await fs.mkdir(uploadDir, { recursive: true });
 
     // Batas ukuran berlaku untuk SEMUA tipe file (bukan hanya PDF) agar
@@ -245,9 +247,7 @@ export async function POST(
       bap = await runBapTransaction();
     } catch (txError) {
       // Bersihkan file yang terlanjur ditulis agar tidak menjadi orphan di disk
-      await fs
-        .unlink(path.join(process.cwd(), "public", fileUrl))
-        .catch(() => {});
+      await fs.unlink(uploadPath(fileUrl)).catch(() => {});
 
       if (txError instanceof Error && txError.message === "BAP_ALREADY_PENDING") {
         return errorResponse(

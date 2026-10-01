@@ -97,6 +97,8 @@ Three tiers; labels are built from tier + division name (`roleLabel()`: "Admin K
   total stock reaches 0. Rejection returns the pcs to their **source** bucket.
 - Use `db.$transaction` with `updateMany({ where: { id, status: "PENDING" } })` + `count === 0`
   checks; mutate stock only through `src/lib/stock.ts`.
+- BAP documents follow the owning asset's access rules (see §6 Serving) — never store them in
+  `public/`.
 
 ### 4. MDM (Mobile Device Management) — Disabled
 - All MDM routes (`/api/mdm/enroll`, `/api/mdm/check-in`, `/api/assets/[id]/mdm`,
@@ -114,9 +116,22 @@ Three tiers; labels are built from tier + division name (`roleLabel()`: "Admin K
 ### 6. File Upload and Compression Rules
 - **Image Compression**: All uploaded images for BAP documents (PNG, JPEG, WebP) must be compressed on the server side (e.g., using `sharp` library) before saving. Convert images to WebP format with a quality setting of 75% and resize them to a maximum dimension of 1920px (width or height) to preserve storage.
 - **PDF Optimization**: PDF uploads must have a strict size limit (e.g., maximum 5MB) and be processed/streamlined before storage to prevent storage exhaustion.
-- **Storage Structure**: Save files under `/public/uploads/bap/` grouped by year/month folders (e.g., `/public/uploads/bap/2026/07/`) using unique, randomized/hashed filenames to avoid name collisions.
+- **Storage Structure**: Save files under `<UPLOAD_ROOT>/bap/` (`src/lib/uploads.ts`; `UPLOAD_DIR`, default `uploads/` — never `public/`) grouped by year/month folders (e.g., `bap/2026/07/`) using unique, randomized/hashed filenames to avoid name collisions. `Bap.fileUrl` is `/uploads/bap/YYYY/MM/<uuid>.(pdf|webp)`.
+- **Serving**: `/uploads/*` is rewritten (`beforeFiles`, `next.config.ts`) to `GET /api/uploads/[...path]`, which finds the `Bap` through the tenant `db` (other organization → `404`) and applies `assetAccessDenied()` to its asset (other division/outlet → `403`). Do not add `/uploads` back to the proxy's `SKIP_PATTERNS`.
 
 ### 7. Verification
 Run `npm run typecheck && npm run lint && npm run build`, `npm run test:unit`,
 `npm run test:integration`, then reseed (`npx prisma db seed`) and `npm run qa` against the dev
-server with `APP_MODE="saas"`. See `CLAUDE.md` §6 for the test case catalogue.
+server with `APP_MODE="saas"`. See `CLAUDE.md` §6 for the test case catalogue. With Docker, set
+`DEV_APP_MODE=saas` in `docker/.env`, start `docker-dev.bat`, run `docker-dev.bat seed`, and point the
+QA runner's `DATABASE_URL` at the container database (`localhost:55432`) — never at another database.
+
+### 8. Docker (single container)
+`Dockerfile` (targets `dev`/`prod`) runs PostgreSQL and Next.js in one container, orchestrated by
+`docker/entrypoint.sh`; launchers are `docker-dev.bat`, `docker-prod.bat`, and `docker/launch.sh`
+(see `docs/docker.md`). On an empty database, dev runs the demo seed and prod runs
+`SEED_MODE=bootstrap npx prisma db seed`, which never wipes data and creates one organization plus
+its first Super Admin. Changes to startup, migrations, or seeding must keep both modes working.
+Prod can also run Cloudflare Tunnel inside the same container (`docker-tunnel.bat` for a quick
+tunnel, or `CLOUDFLARE_TUNNEL_TOKEN` for a named tunnel); the entrypoint supervises `cloudflared`
+separately so a tunnel failure never stops the app, and the token is never passed to Next.js.

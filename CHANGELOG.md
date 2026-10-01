@@ -2,6 +2,32 @@
 
 Seluruh perubahan dan catatan rilis untuk proyek **Inventory** didokumentasikan di berkas ini.
 
+## [Unreleased]
+### 🐳 Docker Satu Kontainer — Dev & Produksi, Satu Klik
+- **Satu kontainer** berisi PostgreSQL 15 dan aplikasi (`Dockerfile`, target `dev` dan `prod`); proses diatur `docker/entrypoint.sh` — inisialisasi database, migrasi otomatis, dan shutdown PostgreSQL yang bersih.
+- **Launcher satu klik**: `docker-dev.bat` / `docker-prod.bat` (Windows, menyalakan Docker Desktop bila perlu dan membuka browser) serta `docker/launch.sh dev|prod` (macOS/Linux), dengan aksi `stop`, `logs`, dan `seed` (dev).
+- **Mode dev** (`docker/compose.dev.yml`, port 3000): kode di-mount dari host dengan hot reload (polling `WATCH_POLL_INTERVAL_MS`, bawaan 2000 ms — selama polling aktif dev server memakai webpack karena Turbopack tidak mendeteksi perubahan lewat polling di bind mount Windows), data demo otomatis saat database kosong, PostgreSQL dibuka di `127.0.0.1:55432`.
+- **Mode produksi** (`docker/compose.prod.yml`, port 8000): `next build` + `next start`, `JWT_SECRET` dan password database dibuat otomatis di volume, dokumen BAP di volume `/data/uploads` (`UPLOAD_DIR`).
+- **Bootstrap produksi** `SEED_MODE=bootstrap` di `prisma/seed.ts`: tidak menghapus data, membuat satu organisasi + Super Admin pertama hanya bila database kosong (password acak dicetak di log bila `ADMIN_PASSWORD` kosong). `SEED_MODE` yang tidak dikenal ditolak, tidak jatuh ke seed demo yang menghapus data.
+- Panduan: [`docs/docker.md`](docs/docker.md); pengaturan opsional `docker/.env.example`.
+
+### 🌐 Akses Publik Tanpa VPS — Cloudflare Tunnel
+- **cloudflared di dalam kontainer produksi** (biner resmi `cloudflare/cloudflared:2026.9.3`, tetap satu kontainer): aplikasi di komputer sendiri dapat dibuka dari internet lewat HTTPS tanpa VPS, IP publik, maupun port forwarding — sekaligus memenuhi syarat cookie `Secure` untuk akses dari perangkat lain.
+- **Quick Tunnel satu klik**: `docker-tunnel.bat` (atau `docker/launch.sh prod tunnel`) menyalakan produksi + alamat acak `https://*.trycloudflare.com` tanpa akun, lalu menampilkan dan membukanya. `docker-prod.bat url` menampilkan alamat yang sedang aktif.
+- **Domain sendiri**: isi `CLOUDFLARE_TUNNEL_TOKEN` di `docker/.env` (tunnel dari Cloudflare Zero Trust, Public Hostname ➡️ `localhost:3000`); tunnel menyala otomatis bersama `docker-prod.bat`.
+- **Andal & aman**: `cloudflared` diawasi terpisah — bila berhenti (mis. token salah) dicoba lagi setiap 15 detik tanpa menghentikan aplikasi; saat shutdown tunnel ditutup lebih dulu. Token hanya diberikan ke proses cloudflared (user `nobody`), tidak ke migrasi, seed, maupun Next.js. Status untuk launcher lewat `inventory tunnel-status` (endpoint metrik `/ready` & `/quicktunnel` cloudflared).
+- **Log aktivitas** kini mengutamakan header `CF-Connecting-IP` (diisi Cloudflare) sebelum `X-Forwarded-For`, yang entri pertamanya dapat dikirim pengunjung sendiri.
+- Panduan: [`docs/docker.md` §4](docs/docker.md#4-akses-publik-dengan-cloudflare-tunnel-tanpa-vps).
+
+### 🔒 Dokumen BAP Lewat Route Ber-Cek-Akses
+- **Disimpan di luar `public/`**: unggahan BAP kini ditulis ke `UPLOAD_DIR` (bawaan folder `uploads/` di proyek; kontainer produksi `/data/uploads`) lewat `src/lib/uploads.ts`. Format `Bap.fileUrl` (`/uploads/bap/YYYY/MM/<uuid>.(pdf|webp)`) dan tautan di antarmuka tidak berubah.
+- **Dilayani dengan cek akses**: `/uploads/*` di-rewrite (`beforeFiles`) ke `GET /api/uploads/[...path]`, yang mewajibkan sesi lalu menerapkan cakupan aset pemilik BAP — organisasi lain `404`, divisi/outlet lain `403`, tanpa sesi dialihkan ke `/login`. Respons `Cache-Control: private, no-store` dan `X-Content-Type-Options: nosniff`. `/uploads` dihapus dari `SKIP_PATTERNS` proxy.
+- **Perbaikan**: di mode produksi (`next start`) dokumen yang diunggah setelah server menyala sebelumnya `404` sampai server di-restart, karena Next.js hanya melayani berkas `public/` yang sudah ada saat start. Kini langsung dapat dibuka.
+- **Dokumen lama** di `public/uploads` tetap terbuka melalui route yang sama (dibaca sebagai lokasi cadangan, tidak pernah dilayani statis). Opsional: pindahkan `public/uploads/bap` ke `uploads/bap`.
+- **QA**: TC-FILE-02 mengunduh lewat HTTP alih-alih membaca disk; TC-FILE-03 baru menguji akses pemilik, Super Admin, tanpa sesi, divisi lain, outlet lain, organisasi lain, dan path traversal (54 kasus).
+
+---
+
 ## [2.1.0] - 2026-10-01
 ### 🌐 Rilis Publik Open Source: **Inventory**
 - **Nama & merek baru**: aplikasi kini bernama **Inventory**. Seluruh merek perusahaan lama — nama, logo, favicon, dan tema warna emas — dihapus dari kode dan dokumentasi; diganti logo & favicon baru (`public/logo.svg`, `src/app/icon.svg`, `icon.png`, `apple-icon.png`).

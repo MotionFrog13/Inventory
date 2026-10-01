@@ -3,6 +3,8 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient, type Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import "dotenv/config";
+// Impor relatif (bukan alias "@/") — ts-node tidak mengenal alias path.
+import { isValidEmail, isValidOrgSlug, isValidUsername, normalizeEmail } from "../src/lib/utils";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
@@ -272,7 +274,53 @@ async function seedOrgB(adminHash: string) {
   });
 }
 
+// ── Bootstrap produksi (SEED_MODE=bootstrap) ───────────────────────────────
+// TIDAK menghapus apa pun: membuat SATU organisasi beserta Super Admin
+// pertamanya, hanya bila database belum memuat organisasi sama sekali. Dipakai
+// kontainer produksi (docker/entrypoint.sh) pada start pertama; divisi, cabang,
+// dan pengguna lain dibuat Super Admin lewat antarmuka.
+const env = (name: string) => process.env[name]?.trim() || undefined;
+
+async function bootstrap() {
+  if ((await prisma.organization.count()) > 0) {
+    console.log("ℹ️  Database sudah memuat organisasi — bootstrap dilewati.");
+    return;
+  }
+
+  const orgName = env("ORG_NAME") ?? "Organisasi Saya";
+  const slug = env("ORG_SLUG") ?? "main";
+  const name = env("ADMIN_NAME") ?? "Super Administrator";
+  const username = env("ADMIN_USERNAME") ?? "superadmin";
+  const email = normalizeEmail(env("ADMIN_EMAIL") ?? "admin@inventory.local");
+  const password = process.env.ADMIN_PASSWORD ?? "";
+
+  const errors: string[] = [];
+  if (!isValidOrgSlug(slug)) errors.push("ORG_SLUG harus cocok ^[a-z0-9-]{3,32}$");
+  if (!isValidUsername(username)) errors.push("ADMIN_USERNAME harus cocok ^[a-z0-9._-]{3,32}$");
+  // Super Admin wajib punya email (CLAUDE.md §2).
+  if (!email || !isValidEmail(email)) errors.push("ADMIN_EMAIL wajib berupa email yang valid");
+  if (password.length < 8) errors.push("ADMIN_PASSWORD minimal 8 karakter");
+  if (errors.length > 0) throw new Error(`Bootstrap dibatalkan:\n  - ${errors.join("\n  - ")}`);
+
+  const hash = await bcrypt.hash(password, 12);
+  await prisma.$transaction(async (tx) => {
+    const org = await tx.organization.create({ data: { name: orgName, slug } });
+    await tx.user.create({
+      data: { organizationId: org.id, username, email, name, role: "SUPER_ADMIN", password: hash, divisionId: null },
+    });
+  });
+
+  console.log(`✅ Organisasi "${orgName}" (kode: ${slug}) dibuat.`);
+  console.log(`✅ Super Admin dibuat — username: ${username}, email: ${email}`);
+}
+
 async function main() {
+  // Gagal tertutup: nilai SEED_MODE yang salah ketik TIDAK boleh jatuh ke seed
+  // demo yang menghapus seluruh data.
+  const mode = process.env.SEED_MODE || "demo";
+  if (mode === "bootstrap") return bootstrap();
+  if (mode !== "demo") throw new Error(`SEED_MODE tidak dikenal: "${mode}" (pilihan: demo, bootstrap)`);
+
   // PENGAMAN: seed ini menghapus SELURUH data termasuk organisasi, pengguna,
   // dan audit log. Jalankan hanya di development/QA. Untuk menimpa pengaman
   // ini secara sadar, set ALLOW_DESTRUCTIVE_SEED=true.

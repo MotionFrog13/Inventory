@@ -30,11 +30,12 @@ Track every item by condition, move stock between outlets with approvals, write 
 - **Three role tiers** — Super Admin, Division Admin, and Division Staff. Labels follow the division ("Admin Kitchen", "Staf IT"). Users can be assigned to **several outlets**; accounts without a division or outlet are denied everything (fail closed).
 - **Stock by condition** — one item can hold many pieces split into *active*, *broken*, *in repair*, *retired*, and *reserved* buckets. The item status is derived from the buckets, so 92 working + 8 broken chopsticks still show as active.
 - **Outlet transfers** — request a move to another outlet; only an admin of the **origin** outlet can approve, and the move is applied in a single database transaction.
-- **Write-offs with evidence (BAP)** — submit a disposal report with a PDF or photo (images are compressed server-side to WebP). Only the submitted pieces are reserved, the rest stays usable; approval removes them for good, rejection returns them to their original bucket.
+- **Write-offs with evidence (BAP)** — submit a disposal report with a PDF or photo (images are compressed server-side to WebP). Documents are stored outside the web root and only open for users who can see the asset. Only the submitted pieces are reserved, the rest stays usable; approval removes them for good, rejection returns them to their original bucket.
 - **Incident tickets** — report broken pieces, let staff propose a fix, and let admins approve or resolve directly. The chosen outcome decides where the pieces go (active, repair, retired).
 - **Reports & alerts** — per-division and per-category distribution, monthly incident trends, warranty expiry, and SLA-overdue tickets on the dashboard.
 - **Activity log** — automatic, read-only audit trail visible to the Super Admin of each organization.
 - **Responsive** — works on phones, with an off-canvas navigation drawer.
+- **Runs anywhere, no server needed** — one Docker container (PostgreSQL included) started with a double-click, for development or production. Publish it from your own computer over HTTPS with the built-in Cloudflare Tunnel — no VPS or cloud hosting.
 
 ## Screenshots
 
@@ -55,8 +56,26 @@ Track every item by condition, move stock between outlets with approvals, write 
 - JWT sessions in HTTP-only cookies, bcrypt password hashing
 - [sharp](https://sharp.pixelplumbing.com/) for server-side image compression
 - Tests: `node:test` (unit & integration) and an HTTP QA runner
+- Docker: one container with Node.js 24 + PostgreSQL 15, optional [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) (`cloudflared`)
 
 ## Quick start
+
+### With Docker — one container, one click
+
+PostgreSQL and the app run together in a single container; only Docker is required.
+
+| | Development | Production | Production + public URL |
+|---|---|---|---|
+| Windows (double-click) | `docker-dev.bat` | `docker-prod.bat` | `docker-tunnel.bat` |
+| macOS / Linux | `bash docker/launch.sh dev` | `bash docker/launch.sh prod` | `bash docker/launch.sh prod tunnel` |
+| URL | http://localhost:3000 | http://localhost:8000 | a temporary `https://<random>.trycloudflare.com`, or your own domain |
+| What runs | `next dev` on your working copy, hot reload, demo data | `next build` + `next start`, one organization and a Super Admin whose random password is printed in the container log | the production container plus Cloudflare Tunnel |
+
+Secrets (JWT, database password) are generated on first start and kept in a Docker volume. See [docs/docker.md](docs/docker.md) (Bahasa Indonesia) for settings, backups, and HTTPS.
+
+**Public access without a server.** Production mode can be published over HTTPS straight from your own computer with Cloudflare Tunnel, built into the container — no VPS, public IP, or router port forwarding. `docker-tunnel.bat` needs no account and gives a temporary address that changes on every restart, which suits trials. For daily use, create a tunnel in Cloudflare Zero Trust for your own domain and put its token in `docker/.env` (`CLOUDFLARE_TUNNEL_TOKEN`); `docker-prod.bat` then starts it automatically. Your computer has to stay on, and the login page becomes reachable from the internet — read [Security notes](#security-notes) first.
+
+### Manual setup
 
 **Requirements:** Node.js 20.19+, 22.12+ or 24+ · PostgreSQL 15+ (or Docker)
 
@@ -88,7 +107,7 @@ In `saas` mode, enter the organization code **`demo`** together with a username 
 
 ## Configuration
 
-All settings live in `.env` (see [`.env.example`](.env.example)).
+All settings live in `.env` (see [`.env.example`](.env.example)). The Docker setup reads `docker/.env` instead and generates its own secrets — see [`docker/.env.example`](docker/.env.example) and [docs/docker.md](docs/docker.md).
 
 | Variable | Required | Description |
 |---|---|---|
@@ -97,6 +116,7 @@ All settings live in `.env` (see [`.env.example`](.env.example)).
 | `JWT_EXPIRES_IN` | no | Session lifetime, default `8h` |
 | `APP_MODE` | no | `self-hosted` (default) or `saas` |
 | `ALLOW_DESTRUCTIVE_SEED` | no | Allow the demo seed to wipe a database when `NODE_ENV=production` |
+| `UPLOAD_DIR` | no | Where write-off documents are stored, default `uploads/` in the project folder |
 
 ### Deployment modes
 
@@ -124,7 +144,7 @@ All settings live in `.env` (see [`.env.example`](.env.example)).
 npm run typecheck && npm run lint && npm run build
 npm run test:unit            # pure functions (scope rules, validation)
 npm run test:integration     # tenant isolation against the development database
-npm run qa                   # 53 HTTP scenarios — needs `npm run dev` and APP_MODE="saas"
+npm run qa                   # 54 HTTP scenarios — needs `npm run dev` and APP_MODE="saas"
 QA_ONLY=transfers npm run qa # a single suite
 ```
 
@@ -133,28 +153,31 @@ The full test catalogue and the architecture rules contributors must follow are 
 ## Project structure
 
 ```
-prisma/            schema, migrations, demo seed
+prisma/            schema, migrations, demo seed (+ production bootstrap mode)
 src/app/           pages (App Router) and API routes (src/app/api)
 src/components/    shared UI (shell, sidebar, header, access denied)
-src/lib/           auth & request context, scope rules, tenant client, stock helpers
+src/lib/           auth & request context, scope rules, tenant client, stock & upload helpers
 qa/, tests/        HTTP QA suites, unit and integration tests
-docs/              design spec, implementation plan, screenshots
+docker/            single-container entrypoint, compose files (dev/prod), launchers
+docs/              Docker guide, design spec, implementation plan, screenshots
+uploads/           write-off documents (created at runtime, not in git)
+Dockerfile         image targets `dev` and `prod`
+docker-*.bat       one-click launchers for Windows (dev, prod, tunnel)
 ```
 
 ## Security notes
 
 Known limitations of the current release — see [SECURITY.md](SECURITY.md) for how to report a vulnerability:
 
-- Uploaded write-off documents are stored under `public/uploads` with random file names and are served **without an access check**. Do not upload highly sensitive files yet.
-- There is no login rate limiting, password reset, or email verification yet. Put the app behind a reverse proxy with rate limiting and HTTPS.
+- There is no login rate limiting, password reset, or email verification yet. Put the app behind a reverse proxy with rate limiting and HTTPS — with Cloudflare Tunnel, add a Cloudflare rate limiting rule for `/api/auth/login` or protect the site with Cloudflare Access.
 - `saas` mode has no public sign-up and is **not** ready for hosting untrusted organizations.
 
 ## Roadmap
 
 1. ✅ **Foundation** — organizations, dynamic divisions & categories, three role tiers, multi-outlet users, tenant-bound database client.
 2. **Cross-division repair tickets** — route a category's tickets to a handling division (e.g. Engineering), assign technicians, track progress and SLA.
-3. **Open-source readiness** — setup wizard (replacing seeded accounts), configurable name/logo/time zone, English & Indonesian UI, login rate limiting, uploads served through access-checked routes.
-4. **Distribution** — Docker image, production compose file, backup guide, CI.
+3. **Open-source readiness** — setup wizard (replacing seeded accounts), configurable name/logo/time zone, English & Indonesian UI, login rate limiting.
+4. **Distribution** — ✅ single-container Docker setup for development and production with a backup guide and built-in Cloudflare Tunnel ([docs/docker.md](docs/docker.md)); published image and CI still to come.
 5. **SaaS** — public sign-up, email verification & password reset, quotas, platform admin.
 
 Mobile device management (MDM) is disabled until it is redesigned per division.
@@ -186,7 +209,9 @@ Inventory is free software, licensed under the [GNU Affero General Public Licens
 - **Mutasi antar outlet** yang hanya bisa disetujui admin outlet asal.
 - **BAP (Berita Acara Penghapusan)** dengan unggahan PDF/foto, reservasi parsial, dan persetujuan admin.
 - **Tiket insiden** per jumlah pcs, laporan per divisi/kategori, peringatan garansi & SLA, serta log aktivitas.
+- **Dokumen BAP terlindungi**: disimpan di luar folder publik dan hanya dapat dibuka pengguna yang berhak atas asetnya.
+- **Docker satu kontainer, satu klik** (PostgreSQL sudah termasuk) untuk pengembangan dan produksi, serta **akses publik tanpa VPS** lewat Cloudflare Tunnel bawaan.
 
-**Mulai cepat:** ikuti langkah [Quick start](#quick-start) di atas, atau panduan lengkap berbahasa Indonesia di [get-started.md](get-started.md). Aturan arsitektur dan katalog pengujian ada di [CLAUDE.md](CLAUDE.md).
+**Mulai cepat:** klik dua kali `docker-dev.bat` (pengembangan) atau `docker-prod.bat` (produksi) — PostgreSQL dan aplikasi berjalan dalam satu kontainer Docker, panduannya di [docs/docker.md](docs/docker.md). Untuk dibuka dari internet tanpa VPS, klik dua kali `docker-tunnel.bat` (Cloudflare Tunnel). Tanpa Docker, ikuti [Quick start](#quick-start) di atas atau panduan lengkap di [get-started.md](get-started.md). Aturan arsitektur dan katalog pengujian ada di [CLAUDE.md](CLAUDE.md).
 
 **Lisensi:** [AGPL-3.0](LICENSE). Bebas dipakai, dimodifikasi, dan di-host sendiri. Bila versi modifikasinya disediakan sebagai layanan daring, kode sumbernya wajib dibagikan dengan lisensi yang sama.

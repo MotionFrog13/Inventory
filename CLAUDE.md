@@ -70,7 +70,7 @@ Guard satu aset memakai `assetAccessDenied(scope, asset)`, yang memeriksa divisi
 - **Divisi aset tidak dapat diubah** setelah dibuat; kategori hanya dapat diganti ke kategori lain di divisi yang sama (dijamin FK `(divisionId, categoryId)`).
 
 ### Aturan Keamanan Database & API:
-- Setiap *query* dan *mutasi* pada route aset, insiden, BAP, transfer, laporan, dan `/api/branches/[id]` **wajib** memakai `db` dari konteks request **dan** helper `src/lib/scope.ts` — `assetScopeWhere()`, `assetRelationScopeWhere()`, `transferScopeWhere()`, `assetAccessDenied()`, `divisionAccessError()` — jangan menyusun filter secara manual.
+- Setiap *query* dan *mutasi* pada route aset, insiden, BAP, dokumen unggahan (`/api/uploads`), transfer, laporan, dan `/api/branches/[id]` **wajib** memakai `db` dari konteks request **dan** helper `src/lib/scope.ts` — `assetScopeWhere()`, `assetRelationScopeWhere()`, `transferScopeWhere()`, `assetAccessDenied()`, `divisionAccessError()` — jangan menyusun filter secara manual.
 - Parameter `?branchId=` dan `?divisionId=` dari klien **tidak boleh dipercaya**: `effectiveBranchFilter()` hanya menghormati outlet milik pengguna, `effectiveDivisionFilter()` hanya menghormati pilihan `SUPER_ADMIN`. Filter di antarmuka tidak boleh menjadi jalan memperluas akses.
 - `GET /api/branches` mengembalikan hanya outlet pengguna. Gunakan `?all=1` **khusus** untuk daftar cabang **tujuan transfer** dan penugasan outlet di halaman Pengguna — nama/lokasi cabang bukan data inventaris, sedangkan hitungan asetnya tetap mengikuti cakupan pengguna.
 - `GET /api/branches/[id]` menolak `403` bila pengguna ber-outlet membuka cabang selain outletnya, dan `404` untuk cabang organisasi lain.
@@ -115,7 +115,7 @@ Guard satu aset memakai `assetAccessDenied(scope, asset)`, yang memeriksa divisi
 - **Branch**: ID, Name (unik per organisasi), Location.
 - **User**: ID, Username (unik per organisasi), Email (opsional, unik global; wajib `SUPER_ADMIN`), Role (`SUPER_ADMIN`, `DIVISION_ADMIN`, `DIVISION_STAFF`), DivisionId (nullable), outlet lewat **UserBranch** (UserId, BranchId).
 - **Asset**: ID, Name, DivisionId, CategoryId, BranchId, SerialNumber (unik per kategori), Status (ACTIVE, BROKEN, REPAIR, RETIRED, BAP_PENDING, BAP), **Stok**: Quantity (total) + ActiveQty + BrokenQty + RepairQty + RetiredQty + ReservedQty.
-- **Bap**: ID, AssetId, Quantity, SourceCondition (ACTIVE|BROKEN|REPAIR|RETIRED), FileUrl, Status (PENDING, APPROVED, REJECTED).
+- **Bap**: ID, AssetId, Quantity, SourceCondition (ACTIVE|BROKEN|REPAIR|RETIRED), FileUrl (`/uploads/bap/YYYY/MM/<uuid>.(pdf|webp)`; berkasnya di `UPLOAD_DIR`, bukan `public/`), Status (PENDING, APPROVED, REJECTED).
 - **Transfer**: ID, AssetId, FromBranchId, ToBranchId, Status (PENDING, APPROVED, REJECTED).
 - **Incident**: ID, AssetId, **Quantity (jumlah pcs rusak)**, Description, Solution, ResolveStatus.
 - **ActivityLog**: ID, UserId (nullable), Username, Action, Details, IpAddress (nullable), CreatedAt.
@@ -157,7 +157,7 @@ Satu baris `Asset` mewakili **satu item ber-stok** (mis. "Sumpit Kayu" 100 pcs d
 3. **Eksekusi**: Persetujuan transfer memperbarui status Transfer menjadi `APPROVED` dan memindahkan `Asset.branchId` ke cabang target di dalam **Prisma Transaction (`db.$transaction`)**.
 
 ### B. Alur BAP (Penghapusan / Pemutihan Aset)
-1. **Pengajuan**: Mengunggah dokumen BAP (PDF maks 5MB, Gambar dikompresi ke WebP 75% maks 1920px), disertai **jumlah pcs** dan **bucket stok asal** (`sourceCondition`: Aktif / Rusak / Perbaikan / Pensiun). Contoh: 10 dari 100 pcs sumpit **hilang** diajukan dari stok Aktif. Pcs yang diajukan pindah ke `reservedQty`.
+1. **Pengajuan**: Mengunggah dokumen BAP (PDF maks 5MB, Gambar dikompresi ke WebP 75% maks 1920px), disertai **jumlah pcs** dan **bucket stok asal** (`sourceCondition`: Aktif / Rusak / Perbaikan / Pensiun). Contoh: 10 dari 100 pcs sumpit **hilang** diajukan dari stok Aktif. Pcs yang diajukan pindah ke `reservedQty`. Dokumennya disimpan di luar `public/` dan hanya dapat dibuka pengguna yang berhak atas aset tersebut (lihat §5 "Berkas Unggahan Tidak Pernah di `public/`").
 2. **Kondisi Terkunci — hanya sebesar yang diajukan**: pcs di `reservedQty` tidak dapat dipakai, dilaporkan rusak, atau diajukan BAP lagi. **Sisa stok tetap bebas** dipakai, dilaporkan rusak, dan ditransfer. Aset baru terkunci sepenuhnya (status `BAP_PENDING` → tidak dapat diedit/dimutasi) ketika **seluruh sisa stok** habis dipesan pengajuan tersebut.
 3. **Satu pengajuan `PENDING` per aset** pada satu waktu (dijaga di dalam transaksi).
 4. **Persetujuan (Admin Divisi / Super Admin)**:
@@ -205,10 +205,11 @@ Satu baris `Asset` mewakili **satu item ber-stok** (mis. "Sumpit Kayu" 100 pcs d
 - [ ] **Guard Dipasang Sebelum Validasi Lain**: Pemeriksaan akses organisasi/divisi/outlet wajib dijalankan **sebelum** validasi bisnis yang pesannya memuat detail data (mis. jumlah stok pada persetujuan BAP), agar isi data outlet lain tidak bocor lewat pesan galat.
 - [ ] **Next.js Caching Gotchas**: Wajib ekspor `export const dynamic = "force-dynamic"` di setiap API endpoint dinamis yang membaca cookies/headers untuk mencegah cache statis Next.js.
 - [ ] **Transaksi Database**: Mutasi persetujuan Transfer dan BAP harus dibungkus dengan `db.$transaction` (client tenant tetap berlaku di dalamnya).
-- [ ] **Kompresi File BAP**: Gunakan library `sharp` di server-side sebelum menyimpan file gambar BAP ke `/public/uploads/bap/[Year]/[Month]/[Hash].webp`.
+- [ ] **Kompresi File BAP**: Gunakan library `sharp` di server-side sebelum menyimpan file gambar BAP ke `<UPLOAD_ROOT>/bap/[Year]/[Month]/[Hash].webp` (`src/lib/uploads.ts`; `fileUrl` = `/uploads/bap/...`).
+- [ ] **Berkas Unggahan Tidak Pernah di `public/`**: dokumen BAP disimpan di `UPLOAD_DIR` (bawaan `uploads/`) dan dibuka lewat `/uploads/...`, yang di-rewrite (`beforeFiles`, `next.config.ts`) ke `GET /api/uploads/[...path]`. Route itu mencari `Bap` lewat `db` (organisasi lain ➡️ `404`) lalu `assetAccessDenied()` atas aset pemiliknya (divisi/outlet lain ➡️ `403`). Jangan menambahkan `/uploads` ke `SKIP_PATTERNS` di `src/proxy.ts`, dan jangan menulis unggahan ke `public/` — Next.js akan melayaninya tanpa cek akses (dan, di `next start`, hanya berkas yang sudah ada saat server menyala).
 - [ ] **Penanganan Tanggal**: Tanggal disimpan dalam UTC dan diformat ke WIB (UTC+7) pada saat rendering frontend.
 - [ ] **Pencegahan Mutasi Activity Log**: Pastikan API `/api/activity-logs` hanya melayani metode `GET` untuk mengambil data log. Tolak metode `POST`, `PUT`, `PATCH`, dan `DELETE` dengan status `405 Method Not Allowed`.
-- [ ] **Logger Utility Terpusat**: Gunakan `writeActivityLog(ctx, action, details, request)` (`src/lib/logger.ts`) — `organizationId` dan identitas pelaku diambil dari konteks request, dan alamat IP diturunkan sendiri oleh helper dari header `x-forwarded-for`.
+- [ ] **Logger Utility Terpusat**: Gunakan `writeActivityLog(ctx, action, details, request)` (`src/lib/logger.ts`) — `organizationId` dan identitas pelaku diambil dari konteks request, dan alamat IP diturunkan sendiri oleh helper dari header `cf-connecting-ip` (diisi Cloudflare Tunnel), lalu `x-forwarded-for`.
 - [ ] **Header Identitas Tidak Boleh Dipercaya**: header `x-user-*` (`x-user-id`, `x-user-org`, `x-user-role`, `x-user-name`, `x-user-username`) **hanya** boleh diisi oleh middleware (`src/proxy.ts`), yang wajib menghapusnya dari setiap request masuk sebelum percabangan apa pun. Jangan pernah melewati (bypass) middleware berdasarkan header yang dapat dikirim klien (mis. `x-next-prerender`) — gunakan env var server-side seperti `NEXT_PHASE`.
 - [ ] **Guard Atomik untuk Persetujuan**: Mutasi approve/reject (BAP, Transfer) wajib memakai `updateMany({ where: { id, status: "PENDING" } })` di dalam transaksi dan memeriksa `count === 0`, agar dua persetujuan bersamaan tidak sama-sama lolos (TOCTOU).
 - [ ] **Riwayat BAP Bersifat Append-Only**: Relasi `Asset` ↔ `Bap` adalah one-to-many. Dokumen BAP yang sudah `APPROVED` **tidak boleh** dihapus atau ditimpa oleh pengajuan baru — aset massal dapat di-BAP secara bertahap dan setiap dokumen adalah bukti penghapusan.
@@ -232,6 +233,8 @@ npx prisma db seed         # data bersih; APP_MODE="saas" membuat organisasi ked
 npm run qa                 # QA API & integrasi — server dev harus berjalan di :3000
 QA_ONLY=transfers npm run qa   # satu suite: auth, divisions, assets, branches, users, transfers, bap, incidents, activity, mdm
 ```
+Dengan Docker (`docs/docker.md`): `DEV_APP_MODE=saas` di `docker/.env` ➡️ `docker-dev.bat` ➡️ `docker-dev.bat seed`, lalu jalankan QA dari host dengan `DATABASE_URL="postgresql://postgres:postgres@localhost:55432/inventory?schema=public"` — QA runner menulis langsung ke database, jadi jangan arahkan ke database lain.
+
 QA runner membutuhkan `APP_MODE="saas"`. Akun uji: kode organisasi `demo` (lihat README) dan `uji-b` (`superadmin`, `admin_it` — username sengaja sama dengan organisasi `demo`).
 
 ### A. Pengujian Keamanan Sesi & RBAC
@@ -286,6 +289,7 @@ QA runner membutuhkan `APP_MODE="saas"`. Akun uji: kode organisasi `demo` (lihat
 - **[TC-BAP-04]** Penolakan BAP mengembalikan pcs ke bucket `sourceCondition` semula.
 - **[TC-FILE-01]** PDF > 5MB ditolak `400`; PDF ≤ 5MB diterima.
 - **[TC-FILE-02]** Gambar dikompresi server ke WebP, dimensi ≤ 1920px, disimpan di struktur `YYYY/MM`.
+- **[TC-FILE-03]** Dokumen BAP mengikuti cakupan asetnya: pemilik cakupan & Super Admin `200`; tanpa sesi ➡️ dialihkan ke `/login` (`/api/uploads` ➡️ `401`); divisi lain & outlet lain `403`; organisasi lain `404`; path traversal `404`.
 
 ### G. Pengujian Resolusi Insiden & Stok per Kondisi
 - **[TC-INC-01]** Menyelesaikan insiden dengan status aset `BROKEN` tersimpan dan diterapkan ke aset.
@@ -304,6 +308,7 @@ QA runner membutuhkan `APP_MODE="saas"`. Akun uji: kode organisasi `demo` (lihat
 - **Unit test** (`tests/unit/`): `resolveScope()` fail closed (termasuk peran tak dikenal), helper cakupan & filter, `validateAssignment()`, `roleLabel()`, validasi username/email/kode organisasi.
 - **Integration test** (`tests/integration/tenant-db.test.ts`): dua organisasi sementara — setiap operasi client tenant (termasuk di dalam `$transaction`) tidak pernah membaca/mengubah baris organisasi lain, FK komposit menolak referensi lintas organisasi, dan setiap model selain `Organization` memiliki `organizationId`.
 - **Smoke test `self-hosted`**: `APP_MODE="self-hosted"` + seed ulang ➡️ halaman login tanpa kolom kode organisasi, login tanpa kode, buat divisi ➡️ kategori ➡️ aset. Kembalikan ke `saas` dan seed ulang setelahnya.
+- **Docker satu kontainer** (`docs/docker.md`): perubahan pada startup, migrasi, atau seed wajib dicoba lewat `docker-dev.bat` (data demo, hot reload) **dan** `docker-prod.bat` (database kosong ➡️ `SEED_MODE=bootstrap`: satu organisasi + Super Admin, tidak pernah menghapus data). Uji di volume bersih: `docker compose -f docker/compose.<mode>.yml down -v`. Perubahan pada tunnel diuji lewat `docker-tunnel.bat` (alamat publik, login lewat HTTPS, `docker-prod.bat url`) dan dengan token yang salah (aplikasi tetap jalan, cloudflared dicoba ulang).
 
 ---
 

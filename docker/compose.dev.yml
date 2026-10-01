@@ -1,0 +1,47 @@
+# Inventory — mode PENGEMBANGAN dalam SATU kontainer (PostgreSQL + `next dev`).
+# Jalankan dengan docker-dev.bat (Windows) / docker/launch.sh dev, atau:
+#   docker compose -f docker/compose.dev.yml up --build
+# Kode di-mount dari host sehingga perubahan langsung ter-reload. Start pertama
+# memasang dependensi dan mengisi data DEMO (password admin123 / staff123).
+# Pengaturan opsional: docker/.env (lihat docker/.env.example).
+name: inventory-dev
+
+services:
+  app:
+    build:
+      context: ..
+      target: dev
+    image: inventory:dev
+    command: ["dev"]
+    ports:
+      - "${DEV_PORT:-3000}:3000"
+      # PostgreSQL untuk Prisma Studio, pgAdmin, atau test dari host — hanya di 127.0.0.1.
+      - "127.0.0.1:${DEV_DB_PORT:-55432}:5432"
+    environment:
+      APP_MODE: ${DEV_APP_MODE:-self-hosted}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      # Khusus dev: password tetap agar mudah dipakai dari host.
+      POSTGRES_PASSWORD: postgres
+      # Docker Desktop (Windows/macOS) tidak meneruskan event perubahan file dari
+      # bind mount — hot reload memakai polling, dan selama polling aktif dev
+      # server memakai webpack (docker/entrypoint.sh). watchOptions di
+      # next.config.ts menangani perubahan isi file; WATCHPACK_POLLING menangani
+      # penemuan route/berkas BARU. Set 0 di Linux: polling mati, Turbopack dipakai.
+      WATCH_POLL_INTERVAL_MS: ${WATCH_POLL_INTERVAL_MS:-2000}
+      WATCHPACK_POLLING: ${WATCH_POLL_INTERVAL_MS:-2000}
+      PUBLIC_PORT: ${DEV_PORT:-3000}
+    volumes:
+      - ..:/app
+      # node_modules & .next versi Linux, terpisah dari milik host (Windows).
+      - node_modules:/app/node_modules
+      - next:/app/.next
+      - data:/data
+    healthcheck:
+      # Start pertama menjalankan `npm ci` — beri waktu lebih lama.
+      start_period: 10m
+    stop_grace_period: 30s
+
+volumes:
+  node_modules:
+  next:
+  data:

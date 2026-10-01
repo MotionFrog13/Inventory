@@ -1,0 +1,23 @@
+# Konteks build image Docker — hanya yang dibutuhkan `next build`.
+.git
+**/node_modules
+.next
+out
+build
+coverage
+test-fixtures
+public/uploads
+uploads
+docs
+*.tsbuildinfo
+npm-debug.log*
+
+# Rahasia & konfigurasi lokal tidak boleh masuk image.
+**/.env
+**/.env.*
+!**/.env.example
+
+# Launcher host
+*.bat
+docker/launch.sh
+.claude

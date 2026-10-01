@@ -16,7 +16,8 @@ Issues that break **tenant isolation** — reading or changing another organizat
 
 These are known and planned for upcoming releases (see the roadmap in the [README](README.md#roadmap)); reports about them are still welcome if you find a concrete exploit:
 
-- Uploaded write-off (BAP) documents are stored under `public/uploads` with random file names and are served without an access check.
 - There is no login rate limiting, password reset, or email verification yet. Run the app behind a reverse proxy that provides HTTPS and rate limiting.
+- Publishing through the built-in **Cloudflare Tunnel** puts the login page on the public internet. Until rate limiting lands, add a Cloudflare rate limiting rule for `/api/auth/login` or protect the site with Cloudflare Access. Quick Tunnel addresses (`*.trycloudflare.com`) are meant for trials — anyone with the link reaches the login page. Keep `CLOUDFLARE_TUNNEL_TOKEN` secret and rotate it in the Cloudflare dashboard if it leaks.
+- The Docker volume stores the generated JWT secret and database password in `/data/secrets`. Treat backups of the volume like credentials.
 - `saas` mode has no public sign-up and is not ready for hosting untrusted organizations.
 - The demo seed creates accounts with fixed passwords. Do not run it against a production database, and change or remove those accounts on real installations.

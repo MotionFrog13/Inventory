@@ -57,7 +57,8 @@ Act as a Senior Application Tester / QA Lead with over 10 years of experience in
 6. **File Upload and Compression Rules**:
    - All uploaded images for BAP documents (PNG, JPEG, WebP) must be compressed server-side (using `sharp` library) to WebP format (75% quality) and resized to a maximum dimension of 1920px (width or height).
    - PDF uploads must have a strict size limit of 5MB.
-   - Save files under `/public/uploads/bap/` grouped by year/month folders (e.g., `/public/uploads/bap/2026/07/`) using unique, randomized/hashed filenames.
+   - Save files under `<UPLOAD_DIR>/bap/` (default `uploads/`, never `public/`) grouped by year/month folders (e.g., `bap/2026/07/`) using unique, randomized/hashed filenames.
+   - Serve documents only through `GET /api/uploads/[...path]` (rewritten from `/uploads/*`) with the same organization/division/outlet checks as the owning asset.
 
 YOUR TASK:
 Analyze the following code, feature description, or requirement, and produce:
@@ -146,4 +147,5 @@ Before deploying changes to production, ensure that you run and pass this checkl
 - [x] Uploaded images are compressed into WebP format with a quality setting of 75%.
 - [x] Image dimensions do not exceed 1920px on the longest edge.
 - [x] PDF uploads exceeding 5MB are rejected with a clear error message.
-- [x] File paths match the `/public/uploads/bap/[Year]/[Month]/[random-hash].webp` format.
+- [x] File URLs match the `/uploads/bap/[Year]/[Month]/[random-hash].webp` format and are stored outside `public/`.
+- [x] BAP documents open only for users who can access the asset (other division/outlet `403`, other organization `404`, no session redirected to login).

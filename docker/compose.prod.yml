@@ -1,0 +1,40 @@
+# Inventory — mode PRODUKSI dalam SATU kontainer (PostgreSQL + `next start`).
+# Jalankan dengan docker-prod.bat (Windows) / docker/launch.sh prod, atau:
+#   docker compose -f docker/compose.prod.yml up -d --build
+# Start pertama membuat SATU organisasi dan akun Super Admin; password acaknya
+# tercetak di log (`docker compose -f docker/compose.prod.yml logs app`).
+# Pengaturan opsional: docker/.env (lihat docker/.env.example).
+name: inventory
+
+services:
+  app:
+    build:
+      context: ..
+      target: prod
+    image: inventory:latest
+    command: ["prod"]
+    restart: unless-stopped
+    ports:
+      - "${PROD_PORT:-8000}:3000"
+    environment:
+      APP_MODE: ${PROD_APP_MODE:-self-hosted}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      # Hanya dipakai pada start pertama (database kosong). Kosong = nilai bawaan.
+      ORG_NAME: ${ORG_NAME:-}
+      ORG_SLUG: ${ORG_SLUG:-}
+      ADMIN_NAME: ${ADMIN_NAME:-}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      PUBLIC_PORT: ${PROD_PORT:-8000}
+      # Akses publik tanpa VPS (docs/docker.md §4). Token = domain sendiri;
+      # quick tunnel = alamat *.trycloudflare.com sementara (`docker-prod.bat tunnel`).
+      CLOUDFLARE_TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+      CLOUDFLARE_QUICK_TUNNEL: ${CLOUDFLARE_QUICK_TUNNEL:-false}
+    volumes:
+      # Database, dokumen BAP, dan rahasia (JWT, password DB) — WAJIB di-backup.
+      - data:/data
+    stop_grace_period: 30s
+
+volumes:
+  data:

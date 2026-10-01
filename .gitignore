@@ -15,8 +15,10 @@
 # fixture yang dibuat otomatis oleh qa-test-runner.ts
 /test-fixtures
 
-# dokumen BAP yang diunggah pengguna — data operasional, bukan bagian source code
+# dokumen BAP yang diunggah pengguna (UPLOAD_DIR, bawaan uploads/; lokasi lama
+# public/uploads) — data operasional, bukan bagian source code
 /public/uploads
+/uploads
 
 # next.js
 /.next/

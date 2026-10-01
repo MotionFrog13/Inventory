@@ -22,7 +22,8 @@ const SKIP_PATTERNS = [
   "/apple-icon.png",
   "/icons",
   "/images",
-  "/uploads",
+  // "/uploads" sengaja TIDAK dilewati: dokumen BAP butuh sesi dan dicek aksesnya
+  // oleh /api/uploads (rewrite di next.config.ts).
 ];
 
 // Header identitas yang HANYA boleh diisi oleh middleware ini.

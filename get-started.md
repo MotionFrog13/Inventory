@@ -5,12 +5,30 @@ Dokumen ini menjelaskan langkah-langkah untuk menyiapkan environment, menjalanka
 ---
 
 ## 📋 Daftar Isi
+0. [Jalur Cepat: Docker Satu Klik](#0-jalur-cepat-docker-satu-klik)
 1. [Prasyarat Sistem](#1-prasyarat-sistem)
 2. [Konfigurasi Environment (`.env`)](#2-konfigurasi-environment-env)
 3. [Setup Database & Seeding](#3-setup-database--seeding)
 4. [Menjalankan Aplikasi](#4-menjalankan-aplikasi)
 5. [Skenario Pengujian Fitur (Manual QA)](#5-skenario-pengujian-fitur-manual-qa)
 6. [Menjalankan Pengujian Otomatis](#6-menjalankan-pengujian-otomatis)
+
+---
+
+## 0. Jalur Cepat: Docker Satu Klik
+PostgreSQL dan aplikasi berjalan dalam **satu kontainer Docker** — Node.js dan PostgreSQL tidak perlu dipasang di komputer. Cukup [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+
+| Tujuan | Windows (klik dua kali) | macOS / Linux | Alamat |
+| :--- | :--- | :--- | :--- |
+| Pengembangan — data demo, hot reload | `docker-dev.bat` | `bash docker/launch.sh dev` | http://localhost:3000 |
+| Produksi — satu organisasi + Super Admin | `docker-prod.bat` | `bash docker/launch.sh prod` | http://localhost:8000 |
+| Produksi + akses publik tanpa VPS (Cloudflare Tunnel) | `docker-tunnel.bat` | `bash docker/launch.sh prod tunnel` | `https://<acak>.trycloudflare.com` |
+
+* **Dev** mengisi data demo yang sama dengan bagian 5 (`superadmin` / `admin123`). Start pertama memasang dependensi (beberapa menit); berikutnya hitungan detik.
+* **Produksi** membuat satu organisasi dan akun Super Admin dengan password acak yang ditampilkan launcher **satu kali** — catat lalu ganti setelah masuk.
+* **Cloudflare Tunnel** membuka mode produksi ke internet lewat HTTPS dari komputer ini sendiri. Alamat `trycloudflare.com` berganti setiap restart; untuk domain sendiri isi `CLOUDFLARE_TUNNEL_TOKEN` di `docker/.env`.
+
+Pengaturan, backup, domain sendiri, dan pemecahan masalah: **[docs/docker.md](docs/docker.md)**. Bagian 1–4 di bawah hanya diperlukan bila menjalankan aplikasi langsung di host tanpa Docker.
 
 ---
 
@@ -55,9 +73,9 @@ Jalankan kontainer database PostgreSQL melalui Docker, lalu bangun skema tabel d
 
 ### A. Jalankan PostgreSQL via Docker Compose
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
-Verifikasi kontainer berjalan dengan `docker ps`. pgAdmin tersedia di `http://localhost:8080`.
+Verifikasi kontainer berjalan dengan `docker ps`. pgAdmin tersedia di `http://localhost:8080`. Berkas `docker-compose.yml` di root hanya berisi PostgreSQL + pgAdmin untuk jalur tanpa Docker ini — berbeda dari kontainer satu-klik di bagian 0.
 
 ### B. Terapkan Migrasi Database Prisma
 ```bash
@@ -131,6 +149,7 @@ Organisasi `uji-b` (mode `saas` saja): `superadmin` / `admin123` dan `admin_it` 
 1. **Login sebagai `staff_it`**: buka `Kabel LAN Cat6 3m` (50 pcs, Bogor) ➡️ **Ajukan BAP** untuk 5 pcs dari stok Aktif, unggah gambar atau PDF (PDF > 5MB ditolak; gambar dikompresi server ke WebP).
 2. Aset tetap **Aktif** dengan 45 pcs siap pakai dan 5 pcs "Dipesan BAP" — sisa stok masih dapat dilaporkan rusak maupun ditransfer.
 3. **Login sebagai `admin_it`**: setujui BAP ➡️ total stok menjadi 45 pcs. Bila ditolak, 5 pcs kembali ke bucket asalnya.
+4. **Akses dokumen BAP**: klik **Unduh / Buka Dokumen** sebagai `admin_it` — dokumen terbuka. Salin alamatnya (`/uploads/bap/...`), lalu buka sebagai `admin_kitchen` (divisi lain) atau `admin_it_jakarta` (outlet lain) — ditolak **Akses ditolak** (`403`). Di jendela penyamaran tanpa login, alamat yang sama dialihkan ke halaman login. Dokumen tersimpan di folder `uploads/` (bukan `public/`).
 
 ---
 
@@ -147,6 +166,14 @@ Organisasi `uji-b` (mode `saas` saja): `superadmin` / `admin123` dan `admin_it` 
 
 ---
 
+### Skenario 7: Akses Publik lewat Cloudflare Tunnel (Docker, mode produksi)
+1. Klik dua kali **`docker-tunnel.bat`**. Launcher menampilkan password Super Admin (start pertama) dan **alamat publik** `https://<acak>.trycloudflare.com`.
+2. Buka alamat tersebut dari HP memakai **data seluler** (bukan Wi-Fi yang sama) dan login sebagai `superadmin` — berhasil lewat HTTPS.
+3. **Login sebagai `superadmin`** ➡️ menu **Log Aktivitas**: entri `LOGIN` dari HP mencatat IP publik HP tersebut, bukan `127.0.0.1`.
+4. Jalankan `docker-prod.bat url` untuk melihat alamat yang sedang aktif. Jalankan `docker-prod.bat` (tanpa `tunnel`) — kontainer dinyalakan ulang tanpa tunnel dan alamat publik tadi tidak lagi dapat dibuka.
+
+---
+
 ## 6. Menjalankan Pengujian Otomatis
 ```bash
 npm run typecheck && npm run lint && npm run build
@@ -154,8 +181,10 @@ npm run test:unit           # unit test fungsi murni
 npm run test:integration    # isolasi client tenant terhadap database pengembangan
 ```
 
-**QA runner API** (`qa-test-runner.ts` + `qa/suites/*`) memverifikasi seluruh aturan bisnis lewat HTTP:
-1. Pastikan `.env` berisi `APP_MODE="saas"`, jalankan `npx prisma db seed`, lalu `npm run dev` di port `3000`.
+**QA runner API** (`qa-test-runner.ts` + `qa/suites/*`, 54 kasus) memverifikasi seluruh aturan bisnis lewat HTTP:
+1. Siapkan server dev di port `3000` dengan `APP_MODE="saas"` dan data seed terbaru — pilih salah satu:
+   * **Tanpa Docker**: isi `.env` dengan `APP_MODE="saas"`, jalankan `npx prisma db seed`, lalu `npm run dev`.
+   * **Dengan Docker**: isi `DEV_APP_MODE=saas` di `docker/.env`, jalankan `docker-dev.bat`, lalu `docker-dev.bat seed`. Saat menjalankan QA dari host, arahkan `DATABASE_URL` ke database kontainer (`postgresql://postgres:postgres@localhost:55432/inventory?schema=public`) — jangan ke database lain, karena beberapa suite menulis langsung ke database.
 2. Jalankan seluruh suite:
    ```bash
    npm run qa
