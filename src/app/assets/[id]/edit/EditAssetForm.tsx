@@ -1,0 +1,382 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  EDITABLE_ASSET_STATUSES,
+  ASSET_STATUS_LABELS,
+} from "@/lib/utils";
+import StockSummary from "@/components/StockSummary";
+
+// Sumber kebenaran tunggal ada di src/lib/utils.ts — dipakai bersama oleh form
+// tambah aset, form edit aset, dan validasi API agar ketiganya tidak menyimpang.
+const ASSET_STATUSES = EDITABLE_ASSET_STATUSES.map((value) => ({
+  value,
+  label:
+    value === "ACTIVE"
+      ? ASSET_STATUS_LABELS[value]
+      : `${ASSET_STATUS_LABELS[value]} (${value})`,
+}));
+
+interface Branch {
+  id: string;
+  name: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+}
+
+interface AssetData {
+  id: string;
+  name: string;
+  categoryId: string;
+  serialNumber: string | null;
+  brand: string | null;
+  model: string | null;
+  specs: string | null;
+  purchaseDate: Date | string | null;
+  warrantyDate: Date | string | null;
+  status: string;
+  photoUrl: string | null;
+  notes: string | null;
+  branchId: string;
+  quantity?: number;
+  activeQty?: number;
+  brokenQty?: number;
+  repairQty?: number;
+  retiredQty?: number;
+  reservedQty?: number;
+}
+
+interface EditAssetFormProps {
+  asset: AssetData;
+  branches: Branch[];
+  /** Kategori di divisi aset — kategori hanya boleh diganti dalam divisi yang sama */
+  categories: Category[];
+  divisionName: string;
+  userRole: string;
+}
+
+export default function EditAssetForm({ asset, branches, categories, divisionName, userRole }: EditAssetFormProps) {
+  const router = useRouter();
+  const assetId = asset.id;
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const formatDateString = (dateVal: Date | string | null) => {
+    if (!dateVal) return "";
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return "";
+    return d.toISOString().slice(0, 10);
+  };
+
+  const [form, setForm] = useState({
+    name: asset.name || "",
+    categoryId: asset.categoryId || "",
+    serialNumber: asset.serialNumber || "",
+    brand: asset.brand || "",
+    model: asset.model || "",
+    specs: asset.specs || "",
+    purchaseDate: formatDateString(asset.purchaseDate),
+    warrantyDate: formatDateString(asset.warrantyDate),
+    status: asset.status || "ACTIVE",
+    photoUrl: asset.photoUrl || "",
+    notes: asset.notes || "",
+    branchId: asset.branchId || "",
+    quantity: String(asset.quantity || 1),
+  });
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setError(null);
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      // Untuk item ber-stok banyak, `status` sengaja TIDAK dikirim: server
+      // menurunkannya dari komposisi stok dan akan menolak nilai manual.
+      const { status: formStatus, ...rest } = form;
+
+      const payload = {
+        ...rest,
+        ...(isSingleUnit ? { status: formStatus } : {}),
+        serialNumber: form.serialNumber || null,
+        brand: form.brand || null,
+        model: form.model || null,
+        specs: form.specs || null,
+        purchaseDate: form.purchaseDate || null,
+        warrantyDate: form.warrantyDate || null,
+        photoUrl: form.photoUrl || null,
+        notes: form.notes || null,
+        quantity: parseInt(form.quantity) || 1,
+      };
+
+      const res = await fetch(`/api/assets/${assetId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setError(data.error || "Terjadi kesalahan saat menyimpan.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      router.push(`/assets/${assetId}`);
+      router.refresh();
+    } catch {
+      setError("Terjadi kesalahan jaringan. Silakan coba lagi.");
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleDelete() {
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/assets/${assetId}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setError(data.error || "Gagal menghapus aset.");
+        setIsDeleting(false);
+        setShowDeleteConfirm(false);
+        return;
+      }
+      router.push("/assets");
+      router.refresh();
+    } catch {
+      setError("Terjadi kesalahan jaringan.");
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  }
+
+  // Rincian stok tersimpan saat ini (read-only di form ini) — hanya bisa
+  // berubah lewat alur Insiden dan BAP, bukan lewat penyuntingan langsung.
+  const stock = {
+    quantity: asset.quantity ?? 1,
+    activeQty: asset.activeQty ?? 1,
+    brokenQty: asset.brokenQty ?? 0,
+    repairQty: asset.repairQty ?? 0,
+    retiredQty: asset.retiredQty ?? 0,
+    reservedQty: asset.reservedQty ?? 0,
+  };
+
+  // Dropdown status hanya relevan untuk item unit tunggal. Begitu total stok
+  // lebih dari 1, status adalah turunan komposisi bucket sehingga menyunting
+  // label saja akan bertentangan dengan angkanya.
+  const nextTotal = parseInt(form.quantity, 10) || 1;
+  const isSingleUnit = nextTotal === 1 && stock.reservedQty === 0;
+
+  const currentTitle = `Edit Aset ${divisionName}`;
+  const currentSubtitle = `Perbarui data aset divisi ${divisionName} yang sudah terdaftar.`;
+
+  return (
+    <div className="space-y-6 animate-fade-in max-w-3xl">
+      {/* Header */}
+      <div>
+        <div className="flex items-center gap-2 text-sm text-slate-500 mb-3">
+          <Link href="/assets" className="hover:text-indigo-600 hover:underline">Daftar Aset</Link>
+          <span>/</span>
+          <Link href={`/assets/${assetId}`} className="hover:text-indigo-600 hover:underline">Detail Aset</Link>
+          <span>/</span>
+          <span className="text-slate-800 font-medium">Edit</span>
+        </div>
+        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{currentTitle}</h1>
+        <p className="text-slate-500 mt-1">{currentSubtitle}</p>
+      </div>
+
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="space-y-6">
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-800 rounded-xl px-4 py-3 text-sm font-medium">
+            ⚠️ {error}
+          </div>
+        )}
+
+        {/* Rincian stok tersimpan — konteks sebelum admin mengubah total stok */}
+        {!isSingleUnit && <StockSummary stock={stock} />}
+
+        {/* Informasi Dasar */}
+        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-5">
+          <h2 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3">Informasi Dasar</h2>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+              Nama Perangkat <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text" name="name" value={form.name} onChange={handleChange} required
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Kategori <span className="text-red-500">*</span></label>
+              <select name="categoryId" value={form.categoryId} onChange={handleChange} required
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                <option value="">Pilih Kategori...</option>
+                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              {/* Divisi aset tidak dapat diubah; kategori hanya dalam divisi yang sama */}
+              <p className="text-xs text-slate-400 mt-1">Divisi: {divisionName} (tidak dapat diubah)</p>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Status <span className="text-red-500">*</span></label>
+              {isSingleUnit ? (
+                <>
+                  <select name="status" value={form.status} onChange={handleChange} required
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                    {ASSET_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                  </select>
+                  <p className="text-xs text-slate-400 mt-1">Berlaku untuk item unit tunggal.</p>
+                </>
+              ) : (
+                <>
+                  <div className="w-full border border-slate-200 bg-slate-50 rounded-lg px-3 py-2.5 text-sm text-slate-500 cursor-not-allowed">
+                    {ASSET_STATUS_LABELS[asset.status] || asset.status} · otomatis dari stok
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Status item ber-stok banyak mengikuti rincian stok. Ubah lewat alur
+                    Insiden (menandai pcs rusak) atau BAP (menghapus stok).
+                  </p>
+                </>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Brand / Merk</label>
+              <input type="text" name="brand" value={form.brand} onChange={handleChange}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Model / Seri</label>
+              <input type="text" name="model" value={form.model} onChange={handleChange}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Serial Number</label>
+              <input type="text" name="serialNumber" value={form.serialNumber} onChange={handleChange}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Total Stok (pcs)</label>
+              <input type="number" name="quantity" value={form.quantity} onChange={handleChange} min={1} required
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+              <p className="text-xs text-slate-400 mt-1">
+                Penambahan stok masuk ke kondisi Aktif. Pengurangan hanya diambil dari
+                stok Aktif ({stock.activeQty} pcs) — stok rusak/perbaikan/pensiun harus
+                dihapus melalui BAP.
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Lokasi (Cabang) <span className="text-red-500">*</span></label>
+              <select name="branchId" value={form.branchId} disabled
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-400 bg-slate-50 cursor-not-allowed">
+                {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+              <p className="text-xs text-slate-400 mt-1">Lokasi cabang hanya dapat diubah melalui proses Transfer Aset.</p>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Spesifikasi</label>
+            <textarea name="specs" value={form.specs} onChange={handleChange} rows={3}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y" />
+          </div>
+        </div>
+
+        {/* Tanggal & Garansi */}
+        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-5">
+          <h2 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3">Tanggal & Garansi</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Tanggal Pembelian</label>
+              <input type="date" name="purchaseDate" value={form.purchaseDate} onChange={handleChange}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Garansi Berakhir</label>
+              <input type="date" name="warrantyDate" value={form.warrantyDate} onChange={handleChange}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+          </div>
+        </div>
+
+        {/* Catatan */}
+        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-5">
+          <h2 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3">Catatan Tambahan</h2>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Catatan</label>
+            <textarea name="notes" value={form.notes} onChange={handleChange} rows={3}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y" />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">URL Foto Perangkat</label>
+            <input type="url" name="photoUrl" value={form.photoUrl} onChange={handleChange}
+              placeholder="https://..."
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400" />
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <Link href={`/assets/${assetId}`} className="text-slate-600 font-semibold hover:underline text-sm">
+              ← Batal
+            </Link>
+            {userRole === "SUPER_ADMIN" && (
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="text-red-600 font-semibold hover:underline text-sm border border-red-200 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition"
+              >
+                🗑 Hapus Aset
+              </button>
+            )}
+          </div>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="bg-indigo-600 text-white font-semibold px-6 py-2.5 rounded-xl text-sm hover:bg-indigo-700 transition shadow-sm disabled:opacity-60 flex items-center gap-2"
+          >
+            {isSubmitting ? (
+              <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Menyimpan...</>
+            ) : "💾 Simpan Perubahan"}
+          </button>
+        </div>
+      </form>
+
+      {/* Confirm Delete Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <h2 className="text-lg font-bold text-slate-900 mb-2">Hapus Aset?</h2>
+            <p className="text-sm text-slate-600 mb-5">
+              Tindakan ini akan menghapus aset beserta semua data insiden dan transfer terkait secara permanen. <strong>Tindakan ini tidak dapat dibatalkan.</strong>
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition">
+                Batal
+              </button>
+              <button onClick={handleDelete} disabled={isDeleting} className="flex-1 bg-red-600 text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-red-700 transition disabled:opacity-60">
+                {isDeleting ? "Menghapus..." : "🗑 Ya, Hapus"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,351 @@
+// Prisma Schema — Asset & Device Inventory (multi-tenant)
+// Lihat CLAUDE.md untuk dokumentasi model data lengkap.
+
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// ISOLASI ORGANISASI (multi-tenant)
+// Setiap model KECUALI Organization wajib punya `organizationId`. Client
+// tenant (src/lib/tenant-db.ts) menyuntikkan kolom ini ke setiap query, dan
+// relasi wajib memakai FK komposit (organizationId, …) sehingga database
+// sendiri menolak referensi lintas organisasi. Model baru WAJIB mengikuti pola
+// ini — tests/integration/tenant-db.test.ts memeriksanya.
+// ─────────────────────────────────────────────────────────────────────────
+
+model Organization {
+  id           String        @id @default(cuid())
+  name         String
+  slug         String        @unique // "kode organisasi" saat login — ^[a-z0-9-]{3,32}$
+  divisions    Division[]
+  branches     Branch[]
+  users        User[]
+  activityLogs ActivityLog[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+// Divisi (dikelola Super Admin) — mis. IT, Kitchen, Engineering
+model Division {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  description    String?
+  categories     Category[]
+  users          User[]
+  assets         Asset[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, id]) // target FK komposit
+  @@unique([organizationId, name])
+}
+
+// Kategori aset di dalam satu divisi (Super Admin, atau Admin divisi tersebut)
+model Category {
+  id             String   @id @default(cuid())
+  organizationId String
+  divisionId     String
+  division       Division @relation(fields: [organizationId, divisionId], references: [organizationId, id], onDelete: Cascade)
+  name           String
+  assets         Asset[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([organizationId, id])
+  @@unique([divisionId, id]) // target FK komposit Asset(divisionId, categoryId)
+  @@unique([divisionId, name])
+}
+
+// Cabang / outlet
+model Branch {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String // Contoh: "Bogor (Pusat)"
+  location       String // Alamat lengkap cabang
+  mapUrl         String? // URL Google Maps Embed
+  assets         Asset[]
+  userBranches   UserBranch[]
+  transfersFrom  Transfer[]   @relation("FromBranch")
+  transfersTo    Transfer[]   @relation("ToBranch")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, name])
+}
+
+// Perangkat / Aset — satu baris = satu item ber-stok (mis. 100 pcs sumpit)
+model Asset {
+  id             String      @id @default(cuid())
+  organizationId String
+  divisionId     String // Divisi pemilik — tidak dapat diubah setelah dibuat
+  categoryId     String // Kategori di divisi yang sama (dijamin FK komposit)
+  branchId       String // Lokasi aset saat ini
+  division       Division    @relation(fields: [organizationId, divisionId], references: [organizationId, id])
+  category       Category    @relation(fields: [divisionId, categoryId], references: [divisionId, id])
+  branch         Branch      @relation(fields: [organizationId, branchId], references: [organizationId, id])
+  name           String // Contoh: "Laptop Dell Latitude 3420"
+  serialNumber   String? // Unik per kategori
+  brand          String?
+  model          String?
+  specs          String?
+  purchaseDate   DateTime?
+  warrantyDate   DateTime? // Tanggal garansi berakhir
+  // Status headline — DITURUNKAN dari komposisi stok oleh `deriveAssetStatus()`
+  // (src/lib/stock.ts). Jangan diset manual di route baru.
+  status         AssetStatus
+  // Invariant: quantity = activeQty + brokenQty + repairQty + retiredQty + reservedQty
+  quantity       Int         @default(1)
+  activeQty      Int         @default(1)
+  brokenQty      Int         @default(0)
+  repairQty      Int         @default(0)
+  retiredQty     Int         @default(0)
+  reservedQty    Int         @default(0) // Terkunci pengajuan BAP (PENDING)
+  photoUrl       String?
+  notes          String?
+  incidents      Incident[]
+  transfers      Transfer[]
+  baps           Bap[]
+  mdm            MdmDevice?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@unique([organizationId, id])
+  @@unique([categoryId, serialNumber]) // cadangan validasi aplikasi; NULL boleh berulang
+  @@index([organizationId, divisionId, branchId])
+  @@index([branchId])
+  @@index([status])
+}
+
+// BAP (Berita Acara Pemeriksaan) — riwayat append-only, one-to-many per aset
+model Bap {
+  id              String         @id @default(cuid())
+  organizationId  String
+  assetId         String
+  asset           Asset          @relation(fields: [organizationId, assetId], references: [organizationId, id], onDelete: Cascade)
+  quantity        Int            @default(1)
+  sourceCondition StockCondition @default(ACTIVE) // Bucket asal — tujuan pengembalian saat ditolak
+  fileUrl         String
+  status          BapStatus      @default(PENDING)
+  previousStatus  AssetStatus    @default(ACTIVE)
+  notes           String?
+  requestedById   String
+  requestedBy     User           @relation("BapRequestedBy", fields: [organizationId, requestedById], references: [organizationId, id])
+  approvedById    String?
+  approvedBy      User?          @relation("BapApprovedBy", fields: [approvedById], references: [id]) // opsional → FK biasa, divalidasi aplikasi
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([assetId])
+  @@index([assetId, status])
+  @@index([requestedById])
+  @@index([approvedById])
+}
+
+// MDM — dinonaktifkan selama Fase 1 (route membalas 404); tabel dipertahankan
+// agar desain ulang tidak perlu mengubah tabel inti.
+model MdmDevice {
+  id               String       @id @default(cuid())
+  organizationId   String
+  assetId          String       @unique
+  asset            Asset        @relation(fields: [organizationId, assetId], references: [organizationId, id], onDelete: Cascade)
+  udid             String       @unique
+  deviceToken      String       @unique
+  osVersion        String?
+  lastCheckIn      DateTime?
+  isCompliant      Boolean      @default(true)
+  batteryLevel     Int?
+  storageTotal     BigInt?
+  storageUsed      BigInt?
+  encryptionActive Boolean      @default(false)
+  isJailbroken     Boolean      @default(false)
+  mdmStatus        MdmStatus    @default(ENROLLED)
+  commands         MdmCommand[]
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, assetId])
+}
+
+model MdmCommand {
+  id             String        @id @default(cuid())
+  organizationId String
+  mdmDeviceId    String
+  mdmDevice      MdmDevice     @relation(fields: [organizationId, mdmDeviceId], references: [organizationId, id], onDelete: Cascade)
+  commandType    CommandType
+  status         CommandStatus @default(PENDING)
+  requestedBy    String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([mdmDeviceId])
+}
+
+// Mutasi / Transfer antar cabang (persetujuan hanya oleh outlet asal)
+model Transfer {
+  id             String         @id @default(cuid())
+  organizationId String
+  assetId        String
+  asset          Asset          @relation(fields: [organizationId, assetId], references: [organizationId, id])
+  fromBranchId   String
+  fromBranch     Branch         @relation("FromBranch", fields: [organizationId, fromBranchId], references: [organizationId, id])
+  toBranchId     String
+  toBranch       Branch         @relation("ToBranch", fields: [organizationId, toBranchId], references: [organizationId, id])
+  reason         String
+  status         TransferStatus @default(PENDING)
+  requestedById  String
+  requestedBy    User           @relation("TransferRequestedBy", fields: [organizationId, requestedById], references: [organizationId, id])
+  approvedById   String?
+  approvedBy     User?          @relation("TransferApprovedBy", fields: [approvedById], references: [id])
+  transferredAt  DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([assetId])
+  @@index([fromBranchId])
+  @@index([toBranchId])
+  @@index([requestedById])
+  @@index([approvedById])
+}
+
+// Riwayat Insiden / Kerusakan (digantikan Ticket di Fase 2)
+model Incident {
+  id                 String    @id @default(cuid())
+  organizationId     String
+  assetId            String
+  asset              Asset     @relation(fields: [organizationId, assetId], references: [organizationId, id])
+  quantity           Int       @default(1)
+  description        String
+  solution           String?
+  resolveStatus      String? // null | "PENDING_REVIEW" | "APPROVED" | "REJECTED"
+  pendingSolution    String?
+  pendingAssetStatus String?
+  proposedBy         String?
+  proposedAt         DateTime?
+  reportedAt         DateTime  @default(now())
+  resolvedAt         DateTime?
+  handledBy          String?
+
+  @@index([assetId])
+}
+
+model User {
+  id                 String        @id @default(cuid())
+  organizationId     String
+  organization       Organization  @relation(fields: [organizationId], references: [id])
+  email              String?       @unique // huruf kecil; wajib untuk SUPER_ADMIN (validasi aplikasi)
+  username           String // ^[a-z0-9._-]{3,32}$ — unik per organisasi
+  password           String // bcrypt hash
+  name               String
+  role               Role          @default(DIVISION_STAFF)
+  // NULL hanya sah untuk SUPER_ADMIN; peran lain tanpa divisi ⇒ akses DITOLAK
+  // (fail closed, lihat resolveScope()). Restrict eksplisit: default Prisma
+  // untuk relasi opsional (SetNull) akan diam-diam mengunci pengguna bila
+  // divisinya terhapus.
+  divisionId         String?
+  division           Division?     @relation(fields: [divisionId], references: [id], onDelete: Restrict)
+  branches           UserBranch[] // outlet penugasan; kosong hanya untuk SUPER_ADMIN
+  bapsRequested      Bap[]         @relation("BapRequestedBy")
+  bapsApproved       Bap[]         @relation("BapApprovedBy")
+  transfersRequested Transfer[]    @relation("TransferRequestedBy")
+  transfersApproved  Transfer[]    @relation("TransferApprovedBy")
+  activityLogs       ActivityLog[]
+  createdAt          DateTime      @default(now())
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, username])
+  @@index([divisionId])
+}
+
+// Penugasan pengguna ke satu atau beberapa outlet
+model UserBranch {
+  organizationId String
+  userId         String
+  branchId       String
+  user           User   @relation(fields: [organizationId, userId], references: [organizationId, id], onDelete: Cascade)
+  branch         Branch @relation(fields: [organizationId, branchId], references: [organizationId, id])
+
+  @@id([userId, branchId])
+  @@index([organizationId, branchId])
+}
+
+// Activity Log (hanya SUPER_ADMIN organisasi tersebut; read-only)
+model ActivityLog {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  userId         String?
+  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  username       String // Fallback jika user dihapus
+  action         String
+  details        String
+  ipAddress      String?
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([userId])
+  @@index([action])
+}
+
+enum Role {
+  SUPER_ADMIN
+  DIVISION_ADMIN
+  DIVISION_STAFF
+}
+
+enum AssetStatus {
+  ACTIVE // Normal, berfungsi baik
+  BROKEN // Rusak, menunggu tindakan
+  REPAIR // Sedang dalam perbaikan/servis
+  RETIRED // Sudah tidak digunakan
+  BAP_PENDING // Seluruh sisa stok terkunci pengajuan BAP
+  BAP // Stok habis dihapus melalui BAP
+}
+
+enum BapStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Kondisi stok — sub-himpunan AssetStatus yang benar-benar menampung pcs.
+enum StockCondition {
+  ACTIVE
+  BROKEN
+  REPAIR
+  RETIRED
+}
+
+enum TransferStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum MdmStatus {
+  ENROLLED
+  UNENROLLED
+  WIPED
+}
+
+enum CommandType {
+  LOCK
+  WIPE
+  REBOOT
+  SYNC
+}
+
+enum CommandStatus {
+  PENDING
+  SENT
+  SUCCESS
+  FAILED
+}
