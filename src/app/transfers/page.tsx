@@ -1,3 +1,7 @@
+
+import UiIcon from "@/components/UiIcon";
+import PageHeading from "@/components/PageHeading";
+import GuideCard from "@/components/GuideCard";
 import Link from "next/link";
 import { Suspense } from "react";
 import { getPageContext, type RequestContext } from "@/lib/auth";
@@ -94,19 +98,19 @@ async function TransfersContent({
   return (
     <>
       {/* Filter */}
-      <form method="GET" action="/transfers" className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+      <form method="GET" action="/transfers" className="ui-panel bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
         <div className="flex flex-wrap gap-3 items-end">
           <div className="min-w-[160px]">
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Dari Cabang</label>
-            <select name="fromBranchId" defaultValue={searchParams.fromBranchId || ""}
+            <label htmlFor="transfers-page-field-1" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Dari Cabang</label>
+            <select id="transfers-page-field-1" name="fromBranchId" defaultValue={searchParams.fromBranchId || ""}
               className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500">
               <option value="">Semua Cabang</option>
               {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
           </div>
           <div className="min-w-[160px]">
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Ke Cabang</label>
-            <select name="toBranchId" defaultValue={searchParams.toBranchId || ""}
+            <label htmlFor="transfers-page-field-2" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Ke Cabang</label>
+            <select id="transfers-page-field-2" name="toBranchId" defaultValue={searchParams.toBranchId || ""}
               className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500">
               <option value="">Semua Cabang</option>
               {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -114,7 +118,7 @@ async function TransfersContent({
           </div>
           <div className="flex gap-2">
             <button type="submit" className="bg-indigo-600 text-white font-semibold px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 transition">
-              🔍 Filter
+              <UiIcon name="search" className="inline-block align-middle" /> Filter
             </button>
             <Link href="/transfers" className="bg-slate-100 text-slate-700 font-semibold px-4 py-2 rounded-lg text-sm hover:bg-slate-200 transition">
               Reset
@@ -129,8 +133,8 @@ async function TransfersContent({
 
       {/* Timeline */}
       {transfers.length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-xl py-16 text-center">
-          <div className="text-5xl mb-3">🔄</div>
+        <div className="ui-panel bg-white border border-slate-200 rounded-xl py-16 text-center">
+          <div className="text-5xl mb-3"><UiIcon size={40} name="transfer" className="inline-block align-middle" /></div>
           <p className="font-semibold text-slate-700">Tidak ada riwayat transfer</p>
           <p className="text-xs text-slate-400 mt-1">Belum ada perpindahan aset yang tercatat dengan filter ini.</p>
         </div>
@@ -145,7 +149,7 @@ async function TransfersContent({
                 {/* Dot */}
                 <div className="absolute left-4 top-5 w-3 h-3 rounded-full bg-indigo-500 border-2 border-white shadow-sm -translate-x-1/2"></div>
 
-                <div className="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-sm transition">
+                <div className="ui-panel bg-white border border-slate-200 rounded-xl p-4 hover:shadow-sm transition">
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="flex-1 min-w-0">
                       {/* Perangkat */}
@@ -166,11 +170,11 @@ async function TransfersContent({
                       {/* Arah Transfer */}
                       <div className="flex items-center gap-2 mt-1.5 text-sm flex-wrap">
                         <span className="bg-slate-100 text-slate-700 font-medium px-2 py-0.5 rounded text-xs">
-                          📍 {transfer.fromBranch.name}
+                          <UiIcon name="pin" className="inline-block align-middle" /> {transfer.fromBranch.name}
                         </span>
                         <span className="text-indigo-600 font-bold">→</span>
                         <span className="bg-indigo-50 text-indigo-700 font-medium px-2 py-0.5 rounded text-xs">
-                          📍 {transfer.toBranch.name}
+                          <UiIcon name="pin" className="inline-block align-middle" /> {transfer.toBranch.name}
                         </span>
                       </div>
 
@@ -246,18 +250,9 @@ export default async function TransfersPage({
 
   return (
     <div className="space-y-5 animate-fade-in">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Riwayat Transfer Aset</h1>
-        <p className="text-slate-500 mt-1">{currentSubtitle}</p>
-        {/* Kewenangan persetujuan lebih sempit dari kewenangan melihat —
-            dijelaskan agar admin outlet tujuan tidak bingung saat tombolnya
-            tidak muncul pada mutasi yang masuk ke outletnya. */}
-        {isBranchBound && (
-          <p className="text-xs text-slate-400 mt-1.5">
-            ℹ️ Hanya mutasi yang <strong>berasal</strong> dari outlet Anda yang dapat disetujui atau ditolak di sini.
-          </p>
-        )}
-      </div>
+      <PageHeading eyebrow="Inventaris & operasional" title={<>Riwayat Mutasi Aset</>} description={<>{currentSubtitle}</>} />
+      <GuideCard title="Mutasi diproses setelah disetujui" icon="transfer">Permintaan mutasi belum mengubah lokasi aset. Persetujuan dilakukan oleh admin outlet asal atau Super Admin.</GuideCard>
+
 
       <Suspense fallback={
         <div className="flex items-center justify-center py-20">

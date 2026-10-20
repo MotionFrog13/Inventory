@@ -3,6 +3,7 @@ import { successResponse, errorResponse, isAdminRole } from "@/lib/utils";
 import { canApproveTransfer, divisionAccessError } from "@/lib/scope";
 import { requireUserScope } from "@/lib/auth";
 import { writeActivityLog } from "@/lib/logger";
+import { isRecordNotFound } from "@/lib/db-errors";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,7 @@ export async function POST(
     const transfer = await db.transfer.findUnique({
       where: { id },
       include: {
-        asset: { select: { id: true, name: true, divisionId: true } },
+        asset: { select: { id: true, name: true, divisionId: true, branchId: true, status: true, updatedAt: true } },
         toBranch: { select: { id: true, name: true } },
       },
     });
@@ -63,6 +64,11 @@ export async function POST(
       );
     }
 
+    if (transfer.asset.branchId !== transfer.fromBranchId ||
+        ["BAP_PENDING", "BAP", "RETIRED"].includes(transfer.asset.status)) {
+      return errorResponse("Lokasi atau kondisi aset sudah berubah; transfer ini tidak dapat disetujui.", "Konflik perubahan", 409);
+    }
+
     // Approve transfer dalam transaksi — update status Transfer + pindahkan aset
     const updatedTransfer = await db.$transaction(async (tx) => {
       // Guard atomik: hanya mengenai baris yang MASIH PENDING, sehingga dua
@@ -81,7 +87,12 @@ export async function POST(
 
       // Pindahkan aset ke cabang tujuan
       await tx.asset.update({
-        where: { id: transfer.assetId },
+        where: {
+          id: transfer.assetId,
+          branchId: transfer.fromBranchId,
+          status: transfer.asset.status,
+          updatedAt: transfer.asset.updatedAt,
+        },
         data: { branchId: transfer.toBranchId },
       });
 
@@ -109,6 +120,9 @@ export async function POST(
       `Transfer aset "${transfer.asset.name}" ke ${transfer.toBranch.name} berhasil disetujui`
     );
   } catch (error) {
+    if (isRecordNotFound(error)) {
+      return errorResponse("Lokasi atau kondisi aset berubah. Muat ulang sebelum mencoba lagi.", "Konflik perubahan", 409);
+    }
     if (error instanceof Error && error.message === "TRANSFER_ALREADY_PROCESSED") {
       return errorResponse(
         "Permintaan transfer ini sudah diproses oleh admin lain",

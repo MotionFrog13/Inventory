@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../../src/lib/prisma";
 import { tenantDb } from "../../src/lib/tenant-db";
 import { isForeignKeyViolation, isRecordNotFound, isUniqueViolation } from "../../src/lib/db-errors";
+import { initialStock, moveStock, stockMutationWhere, stockUpdateData, stockSum } from "../../src/lib/stock";
 
 // Dua organisasi sementara dengan ID unik per run — tidak menyentuh data seed.
 const RUN = Date.now().toString(36);
@@ -92,6 +93,36 @@ describe("tenantDb — isolasi antar-organisasi", () => {
   before(async () => {
     await createFixture(A);
     await createFixture(B);
+  });
+
+  test("simultaneous stock writes accept one snapshot and roll back stale workflows", async () => {
+    const id = `${A.asset}-concurrency`;
+    await dbA.asset.create({ data: {
+      id, organizationId: A.org, divisionId: A.division, categoryId: A.category,
+      branchId: A.branch1, name: "Concurrent stock", ...stockUpdateData(initialStock(100, "ACTIVE")),
+    } });
+    try {
+      const snapshot = await dbA.asset.findUniqueOrThrow({ where: { id } });
+      const writes = await Promise.allSettled([
+        dbA.asset.update({ where: stockMutationWhere(snapshot), data: stockUpdateData(moveStock(snapshot, "activeQty", "brokenQty", 3)) }),
+        dbA.asset.update({ where: stockMutationWhere(snapshot), data: stockUpdateData(moveStock(snapshot, "activeQty", "reservedQty", 5)) }),
+      ]);
+      assert.equal(writes.filter((r) => r.status === "fulfilled").length, 1);
+      const failed = writes.find((r) => r.status === "rejected");
+      assert.ok(failed?.status === "rejected" && isRecordNotFound(failed.reason));
+      const current = await dbA.asset.findUniqueOrThrow({ where: { id } });
+      assert.equal(stockSum(current), 100);
+      await assert.rejects(dbA.$transaction([
+        dbA.incident.create({ data: { organizationId: A.org, assetId: id, description: "Must roll back" } }),
+        dbA.asset.update({ where: stockMutationWhere(snapshot), data: stockUpdateData(initialStock(1, "ACTIVE")) }),
+      ]), isRecordNotFound);
+      assert.equal(await dbA.incident.count({ where: { assetId: id } }), 0);
+      assert.equal((await dbA.asset.findUniqueOrThrow({ where: { id } })).quantity, 100);
+      await dbA.asset.update({ where: { id }, data: { branchId: A.branch2 } });
+      await assert.rejects(dbA.asset.update({ where: stockMutationWhere(current), data: stockUpdateData(initialStock(1, "ACTIVE")) }), isRecordNotFound);
+    } finally {
+      await dbA.asset.delete({ where: { id } });
+    }
   });
 
   after(async () => {

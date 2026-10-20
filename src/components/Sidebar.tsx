@@ -1,34 +1,36 @@
 "use client";
+import Image from "next/image";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn, divisionScopeLabel, type SessionUserView } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
+import UiIcon, { type IconName } from "./UiIcon";
 
 interface NavItem {
   label: string;
   href: string;
-  icon: string;
+  icon: IconName;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Dashboard", href: "/", icon: "📊" },
-  { label: "Aset", href: "/assets", icon: "💻" },
-  { label: "Insiden", href: "/incidents", icon: "🔧" },
-  { label: "Transfer", href: "/transfers", icon: "🔄" },
-  { label: "Cabang", href: "/branches", icon: "🏢" },
-  { label: "Laporan", href: "/reports", icon: "📈" },
+  { label: "Ringkasan", href: "/", icon: "grid" },
+  { label: "Aset", href: "/assets", icon: "box" },
+  { label: "Insiden", href: "/incidents", icon: "tool" },
+  { label: "Mutasi Aset", href: "/transfers", icon: "transfer" },
+  { label: "Cabang", href: "/branches", icon: "building" },
+  { label: "Laporan", href: "/reports", icon: "chart" },
 ];
 
 const SUPER_ADMIN_NAV_ITEMS: NavItem[] = [
-  { label: "Divisi & Kategori", href: "/divisions", icon: "🗂️" },
-  { label: "Pengguna", href: "/users", icon: "👤" },
-  { label: "Log Aktivitas", href: "/activity-logs", icon: "📜" },
+  { label: "Divisi & Kategori", href: "/divisions", icon: "layers" },
+  { label: "Pengguna", href: "/users", icon: "users" },
+  { label: "Log Aktivitas", href: "/activity-logs", icon: "history" },
 ];
 
 // Admin divisi mengelola kategori divisinya sendiri (halaman yang sama).
 const DIVISION_ADMIN_NAV_ITEMS: NavItem[] = [
-  { label: "Kategori", href: "/divisions", icon: "🗂️" },
+  { label: "Kategori", href: "/divisions", icon: "layers" },
 ];
 
 interface SidebarProps {
@@ -97,9 +99,9 @@ export default function Sidebar({ user, isMobile, mobileOpen, onClose }: Sidebar
     >
       {/* Logo / Brand */}
       <div className="sidebar-header">
-        <Link href="/" className="sidebar-brand" onClick={handleNavigate}>
+        <Link href="/" className="sidebar-brand" aria-label="Inventory, buka ringkasan" onClick={handleNavigate}>
           <span className="sidebar-logo">
-            <img src="/logo.svg" alt="Inventory" className="w-full h-full" />
+            <Image src="/logo.svg" width={40} height={40} alt="" className="w-full h-full" />
           </span>
           {!isCollapsed && (
             <div className="sidebar-brand-text">
@@ -117,22 +119,23 @@ export default function Sidebar({ user, isMobile, mobileOpen, onClose }: Sidebar
             className="sidebar-toggle"
             aria-label="Tutup menu navigasi"
           >
-            ✕
+            <UiIcon name="close" size={18} />
           </button>
         ) : (
           <button
             type="button"
             onClick={() => setCollapsed(!collapsed)}
             className="sidebar-toggle"
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={collapsed ? "Perluas navigasi" : "Ringkas navigasi"}
           >
-            {collapsed ? "→" : "←"}
+            <UiIcon name={collapsed ? "chevron" : "back"} size={16} />
           </button>
         )}
       </div>
 
       {/* Navigation */}
       <nav className="sidebar-nav">
+        {!isCollapsed && <p className="sidebar-section-label">Ruang kerja</p>}
         {NAV_ITEMS.map((item) => (
           <Link
             key={item.href}
@@ -142,9 +145,11 @@ export default function Sidebar({ user, isMobile, mobileOpen, onClose }: Sidebar
               isActive(item.href) && "sidebar-link-active"
             )}
             title={isCollapsed ? item.label : undefined}
+            aria-label={isCollapsed ? item.label : undefined}
+            aria-current={isActive(item.href) ? "page" : undefined}
             onClick={handleNavigate}
           >
-            <span className="sidebar-link-icon">{item.icon}</span>
+            <span className="sidebar-link-icon"><UiIcon name={item.icon} /></span>
             {!isCollapsed && (
               <span className="sidebar-link-label">{item.label}</span>
             )}
@@ -156,7 +161,7 @@ export default function Sidebar({ user, isMobile, mobileOpen, onClose }: Sidebar
           <>
             {!isCollapsed && (
               <div className="px-3 pt-4 pb-1">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Admin</p>
+                <p className="sidebar-section-label">Administrasi</p>
               </div>
             )}
             {adminItems.map((item) => (
@@ -168,9 +173,11 @@ export default function Sidebar({ user, isMobile, mobileOpen, onClose }: Sidebar
                   isActive(item.href) && "sidebar-link-active"
                 )}
                 title={isCollapsed ? item.label : undefined}
+            aria-label={isCollapsed ? item.label : undefined}
+            aria-current={isActive(item.href) ? "page" : undefined}
                 onClick={handleNavigate}
               >
-                <span className="sidebar-link-icon">{item.icon}</span>
+                <span className="sidebar-link-icon"><UiIcon name={item.icon} /></span>
                 {!isCollapsed && (
                   <span className="sidebar-link-label">{item.label}</span>
                 )}
@@ -183,8 +190,8 @@ export default function Sidebar({ user, isMobile, mobileOpen, onClose }: Sidebar
       {/* Footer */}
       {!isCollapsed && (
         <div className="sidebar-footer">
-          <p className="sidebar-footer-text">{user?.organization.name ?? ""}</p>
-          <p className="sidebar-footer-version">v2.1.0</p>
+          <span className="sidebar-workspace-dot" aria-hidden="true" />
+          <div><p className="sidebar-footer-text">{user?.organization.name ?? "Ruang kerja Anda"}</p><p className="sidebar-footer-version">{scopeLine || "Inventaris organisasi"}</p></div>
         </div>
       )}
     </aside>

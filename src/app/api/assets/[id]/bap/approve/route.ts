@@ -3,7 +3,8 @@ import { successResponse, errorResponse, isAdminRole } from "@/lib/utils";
 import { assetAccessDenied } from "@/lib/scope";
 import { requireUserScope } from "@/lib/auth";
 import { writeActivityLog } from "@/lib/logger";
-import { STOCK_SELECT, removeStock, stockUpdateData } from "@/lib/stock";
+import { STOCK_SELECT, removeStock, stockUpdateData, stockMutationWhere } from "@/lib/stock";
+import { isRecordNotFound } from "@/lib/db-errors";
 
 export const dynamic = "force-dynamic";
 
@@ -98,7 +99,7 @@ export async function POST(
       }
 
       await tx.asset.update({
-        where: { id: bap.assetId },
+        where: stockMutationWhere(bap.asset),
         data: stockUpdateData(nextStock),
       });
 
@@ -126,6 +127,9 @@ export async function POST(
         `(${nextStock.activeQty} pcs aktif).`
     );
   } catch (error) {
+    if (isRecordNotFound(error)) {
+      return errorResponse("Stok atau lokasi aset berubah. Muat ulang sebelum mencoba lagi.", "Konflik perubahan", 409);
+    }
     if (error instanceof Error && error.message === "BAP_ALREADY_PROCESSED") {
       return errorResponse(
         "Pengajuan BAP ini sudah diproses oleh admin lain",

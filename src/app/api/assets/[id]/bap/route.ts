@@ -11,8 +11,10 @@ import {
   isStockCondition,
   moveStock,
   stockUpdateData,
+  stockMutationWhere,
 } from "@/lib/stock";
-import { UPLOAD_ROOT, uploadPath } from "@/lib/uploads";
+import { UPLOAD_ROOT, uploadPath, isPdfDocument, readBapForm } from "@/lib/uploads";
+import { isRecordNotFound } from "@/lib/db-errors";
 import path from "path";
 import fs from "fs/promises";
 import { randomUUID } from "crypto";
@@ -63,13 +65,17 @@ export async function POST(
     }
 
     // Parse form data
-    const formData = await request.formData();
-    const file = formData.get("file") as File | null;
-    const quantityStr = formData.get("quantity") as string | null;
-    const sourceConditionRaw = formData.get("sourceCondition") as string | null;
-    const notes = formData.get("notes") as string | null;
+    const formData = await readBapForm(request);
+    const file = formData.get("file");
+    const quantityStr = formData.get("quantity");
+    const sourceConditionRaw = formData.get("sourceCondition");
+    const notes = formData.get("notes");
 
-    if (!file) {
+    if ([quantityStr, sourceConditionRaw, notes].some((value) => value !== null && typeof value !== "string")) {
+      return errorResponse("Jumlah, kondisi stok, dan catatan harus berupa teks", "Validasi gagal", 400);
+    }
+
+    if (!(file instanceof File) || file.size === 0) {
       return errorResponse(
         "File BAP (PDF atau Gambar) wajib diunggah",
         "Validasi gagal",
@@ -77,9 +83,9 @@ export async function POST(
       );
     }
 
-    const quantity = quantityStr ? parseInt(quantityStr) : 1;
+    const quantity = quantityStr ? Number(quantityStr) : 1;
 
-    if (isNaN(quantity) || quantity < 1) {
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 2147483647) {
       return errorResponse("Jumlah aset yang dihapus tidak valid", "Validasi gagal", 400);
     }
 
@@ -152,6 +158,9 @@ export async function POST(
 
     // Proses file berdasarkan tipe
     if (mimeType === "application/pdf") {
+      if (!isPdfDocument(fileBuffer)) {
+        return errorResponse("Isi file bukan dokumen PDF yang valid", "Validasi gagal", 400);
+      }
       // Re-cek terhadap byte aktual (file.size berasal dari klien)
       if (fileBuffer.byteLength > MAX_UPLOAD_SIZE) {
         return errorResponse(
@@ -172,7 +181,13 @@ export async function POST(
       // Gambar: Kompres dengan sharp → WebP 75% quality, max 1920px
       try {
         const sharp = (await import("sharp")).default;
-        const webpBuffer = await sharp(fileBuffer)
+        const image = sharp(fileBuffer, { limitInputPixels: 40_000_000 });
+        const metadata = await image.metadata();
+        if (!["jpeg", "png", "webp"].includes(metadata.format || "")) {
+          return errorResponse("Isi file harus berupa JPEG, PNG, atau WebP", "Validasi gagal", 400);
+        }
+        const webpBuffer = await image
+          .rotate()
           .resize(1920, 1920, { fit: "inside", withoutEnlargement: true })
           .webp({ quality: 75 })
           .toBuffer();
@@ -222,7 +237,7 @@ export async function POST(
           fileUrl,
           status: "PENDING",
           previousStatus: asset.status, // Jejak historis status aset saat diajukan
-          notes: notes || null,
+          notes: typeof notes === "string" ? notes || null : null,
           requestedById: user.id,
         },
         include: {
@@ -235,7 +250,7 @@ export async function POST(
       //    terkunci — status aset baru menjadi BAP_PENDING bila seluruh sisa
       //    stok habis dipesan (lihat `deriveAssetStatus`).
       await tx.asset.update({
-        where: { id },
+        where: stockMutationWhere(asset),
         data: stockUpdateData(reservedStock),
       });
 
@@ -274,6 +289,15 @@ export async function POST(
       201
     );
   } catch (error) {
+    if (error instanceof Error && error.message === "BAP_BODY_TOO_LARGE") {
+      return errorResponse("Ukuran seluruh unggahan tidak boleh melebihi 6MB (berkas maksimal 5MB)", "Validasi gagal", 413);
+    }
+    if (error instanceof Error && error.message === "BAP_INVALID_FORM") {
+      return errorResponse("Format formulir unggahan tidak valid", "Validasi gagal", 400);
+    }
+    if (isRecordNotFound(error)) {
+      return errorResponse("Stok atau lokasi aset berubah. Muat ulang sebelum mencoba lagi.", "Konflik perubahan", 409);
+    }
     console.error("Create BAP error:", error);
     return errorResponse("Terjadi kesalahan server", "Gagal mengajukan BAP", 500);
   }

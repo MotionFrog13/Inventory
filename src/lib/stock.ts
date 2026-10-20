@@ -50,6 +50,7 @@ export type DerivedAssetStatus =
  * nilai lama kembali ke database.
  */
 export const STOCK_SELECT = {
+  updatedAt: true,
   quantity: true,
   activeQty: true,
   brokenQty: true,
@@ -57,6 +58,29 @@ export const STOCK_SELECT = {
   retiredQty: true,
   reservedQty: true,
 } as const;
+
+/** Compare-and-swap: jangan menimpa stok atau aset yang sudah berpindah outlet. */
+export function stockMutationWhere(asset: AssetStock & {
+  id: string;
+  divisionId: string;
+  branchId: string;
+  status: DerivedAssetStatus;
+  updatedAt: Date;
+}) {
+  return {
+    id: asset.id,
+    divisionId: asset.divisionId,
+    branchId: asset.branchId,
+    status: asset.status,
+    updatedAt: asset.updatedAt,
+    quantity: asset.quantity,
+    activeQty: asset.activeQty,
+    brokenQty: asset.brokenQty,
+    repairQty: asset.repairQty,
+    retiredQty: asset.retiredQty,
+    reservedQty: asset.reservedQty,
+  };
+}
 
 export const STOCK_BUCKET_BY_CONDITION: Record<StockCondition, StockBucket> = {
   ACTIVE: "activeQty",

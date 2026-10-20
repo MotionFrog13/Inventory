@@ -1,3 +1,5 @@
+
+import UiIcon from "@/components/UiIcon";
 import Link from "next/link";
 
 /**
@@ -21,9 +23,9 @@ export default function AccessDenied({
 }) {
   return (
     <div className="animate-fade-in flex items-center justify-center py-20">
-      <div className="max-w-md w-full bg-white border border-slate-200/80 rounded-2xl shadow-sm p-8 text-center">
-        <div className="text-5xl mb-3">🔒</div>
-        <h1 className="text-xl font-bold text-slate-900">{title}</h1>
+      <div className="ui-panel max-w-md w-full bg-white border border-slate-200/80 rounded-2xl shadow-sm p-8 text-center">
+        <div className="text-5xl mb-3"><UiIcon name="lock" className="inline-block align-middle" /></div>
+        <h1 className="page-title">{title}</h1>
         <p className="text-sm text-slate-500 mt-2 leading-relaxed">{message}</p>
         <Link
           href={backHref}

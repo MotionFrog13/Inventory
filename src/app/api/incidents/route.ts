@@ -4,7 +4,8 @@ import { assetAccessDenied, assetRelationScopeWhere } from "@/lib/scope";
 import { requireUserScope } from "@/lib/auth";
 import { Prisma } from "@prisma/client";
 import { writeActivityLog } from "@/lib/logger";
-import { moveStock, stockUpdateData } from "@/lib/stock";
+import { moveStock, stockUpdateData, stockMutationWhere } from "@/lib/stock";
+import { isRecordNotFound } from "@/lib/db-errors";
 
 export const dynamic = "force-dynamic";
 
@@ -111,9 +112,10 @@ export async function POST(request: NextRequest) {
     const brokenCount =
       quantity === undefined || quantity === null || quantity === ""
         ? 1
-        : parseInt(String(quantity), 10);
+        : Number(quantity);
 
-    if (!Number.isFinite(brokenCount) || brokenCount < 1) {
+    if ((typeof quantity !== "number" && typeof quantity !== "string" && quantity != null) ||
+        !Number.isInteger(brokenCount) || brokenCount < 1 || brokenCount > 2147483647) {
       return errorResponse(
         "Jumlah unit yang rusak harus berupa angka minimal 1",
         "Validasi gagal",
@@ -168,7 +170,7 @@ export async function POST(request: NextRequest) {
       // Status aset diturunkan dari komposisi stok: selama masih ada pcs aktif
       // item tetap tampil ACTIVE, hanya jumlahnya yang berkurang.
       db.asset.update({
-        where: { id: assetId },
+        where: stockMutationWhere(asset),
         data: stockUpdateData(nextStock),
       }),
     ]);
@@ -191,6 +193,9 @@ export async function POST(request: NextRequest) {
       201
     );
   } catch (error) {
+    if (isRecordNotFound(error)) {
+      return errorResponse("Stok atau lokasi aset berubah. Muat ulang sebelum mencoba lagi.", "Konflik perubahan", 409);
+    }
     console.error("Create incident error:", error);
     return errorResponse("Terjadi kesalahan server", "Gagal mencatat insiden", 500);
   }

@@ -1,4 +1,7 @@
 "use client";
+import UiIcon from "@/components/UiIcon";
+import Dialog from "@/components/Dialog";
+
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -474,7 +477,7 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
   const TABS: { key: Tab; label: string; count?: number }[] = [
     { key: "info", label: "Informasi Umum" },
     { key: "incidents", label: "Riwayat Insiden", count: incidents.length },
-    { key: "transfers", label: "Riwayat Transfer", count: transfers.length },
+    { key: "transfers", label: "Riwayat Mutasi", count: transfers.length },
   ];
 
   return (
@@ -489,7 +492,7 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
       <div className="flex flex-col gap-4 mb-4">
         {actionError && (
           <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg px-4 py-3 text-sm font-medium">
-            ⚠️ {actionError}
+            <UiIcon name="warning" className="inline-block align-middle" /> {actionError}
           </div>
         )}
         
@@ -504,16 +507,16 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                   setIncidentForm({ description: "", quantity: "1" });
                 }}
                 disabled={reportableQty <= 0}
-                className="bg-red-600 text-white font-semibold px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-white border border-rose-200 text-rose-700 font-semibold px-4 py-2.5 rounded-xl text-sm hover:bg-rose-50 transition shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                🔧 Buat Tiket Insiden
+                <UiIcon name="tool" className="inline-block align-middle" /> Buat Tiket Insiden
               </button>
               {branches.length > 0 && (
                 <button
                   onClick={() => { setShowTransferModal(true); setTransferError(null); setTransferForm({ toBranchId: "", reason: "" }); }}
-                  className="bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition shadow-xs"
+                  className="bg-white border border-indigo-200 text-indigo-700 font-semibold px-4 py-2.5 rounded-xl text-sm hover:bg-indigo-50 transition shadow-xs"
                 >
-                  🔄 Transfer Aset
+                  <UiIcon name="transfer" className="inline-block align-middle" /> Ajukan Mutasi
                 </button>
               )}
               {/* Hanya boleh ada satu pengajuan BAP menunggu persetujuan per aset */}
@@ -526,9 +529,9 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                 }}
                 disabled={hasPendingBap}
                 title={hasPendingBap ? "Masih ada pengajuan BAP yang menunggu persetujuan" : undefined}
-                className="bg-slate-800 text-white font-semibold px-4 py-2 rounded-lg text-sm hover:bg-slate-900 transition shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-white border border-slate-200 text-slate-700 font-semibold px-4 py-2.5 rounded-xl text-sm hover:bg-slate-50 transition shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                📄 Ajukan Penghapusan (BAP)
+                <UiIcon name="document" className="inline-block align-middle" /> Ajukan Penghapusan (BAP)
               </button>
             </>
           )}
@@ -582,13 +585,14 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
       </div>
 
       {/* Tabs */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
+      <div className="ui-panel bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
         {/* Tab Navigation */}
         <div className="border-b border-slate-200 bg-slate-50/50 flex">
           {TABS.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
+              aria-pressed={activeTab === tab.key}
               className={`px-5 py-3.5 text-sm font-semibold transition-colors relative flex items-center gap-2 ${
                 activeTab === tab.key
                   ? "text-indigo-600 bg-white border-b-2 border-indigo-600"
@@ -650,7 +654,7 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
               {bap && (
                 <div className="col-span-full border-t border-slate-200 pt-4 mt-2">
                   <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-1.5">
-                    📄 Detail Pengajuan BAP (Penghapusan Aset)
+                    <UiIcon name="document" className="inline-block align-middle" /> Detail Pengajuan BAP (Penghapusan Aset)
                   </h3>
                   <div className="bg-indigo-50/20 rounded-xl border border-indigo-100 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <InfoRow label="Status BAP" value={
@@ -710,7 +714,7 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
             <div className="space-y-4">
               {incidents.length === 0 ? (
                 <div className="py-10 text-center">
-                  <div className="text-4xl mb-2">✅</div>
+                  <div className="text-4xl mb-2"><UiIcon name="check" className="inline-block align-middle" /></div>
                   <p className="font-semibold text-slate-700">Tidak ada riwayat insiden</p>
                   <p className="text-xs text-slate-400 mt-1">Perangkat ini belum pernah mengalami kerusakan yang tercatat.</p>
                 </div>
@@ -738,11 +742,11 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                             </span>
                           ) : isPendingReview ? (
                             <span className="text-xs font-bold px-2 py-0.5 rounded-full border bg-amber-100 text-amber-700 border-amber-200 animate-pulse">
-                              ⏳ Menunggu Acc Admin
+                              <UiIcon name="clock" className="inline-block align-middle" /> Menunggu Acc Admin
                             </span>
                           ) : (
                             <span className="text-xs font-bold px-2 py-0.5 rounded-full border bg-red-100 text-red-700 border-red-200 animate-pulse">
-                              ⏳ Unresolved
+                              <UiIcon name="clock" className="inline-block align-middle" /> Unresolved
                             </span>
                           )}
                           {isRejected && (
@@ -760,7 +764,7 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                         {/* Solusi pending review */}
                         {isPendingReview && incident.pendingSolution && (
                           <div className="mt-2 pt-2 border-t border-amber-200">
-                            <p className="text-xs font-semibold text-amber-700 mb-0.5">📝 Solusi diajukan oleh {incident.proposedBy}:</p>
+                            <p className="text-xs font-semibold text-amber-700 mb-0.5">Solusi diajukan oleh {incident.proposedBy}:</p>
                             <p className="text-sm text-slate-700">{incident.pendingSolution}</p>
                             {incident.pendingAssetStatus && (
                               <p className="text-xs text-amber-600 mt-0.5">Status diusulkan: <strong>{incident.pendingAssetStatus}</strong></p>
@@ -811,7 +815,7 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                             }}
                             className="bg-indigo-600 text-white font-semibold px-3 py-1.5 rounded-lg text-xs hover:bg-indigo-700 transition"
                           >
-                            📝 Ajukan Selesai
+                            Ajukan Selesai
                           </button>
                         )}
                       </div>
@@ -828,7 +832,7 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
             <div className="space-y-4">
               {transfers.length === 0 ? (
                 <div className="py-10 text-center">
-                  <div className="text-4xl mb-2">📍</div>
+                  <div className="text-4xl mb-2"><UiIcon name="pin" className="inline-block align-middle" /></div>
                   <p className="font-semibold text-slate-700">Belum ada riwayat perpindahan</p>
                   <p className="text-xs text-slate-400 mt-1">Aset ini belum pernah dipindahkan ke cabang lain.</p>
                 </div>
@@ -843,7 +847,7 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                         {/* Dot */}
                         <div className="absolute left-3 top-4 w-3 h-3 rounded-full bg-indigo-500 border-2 border-white shadow-sm"></div>
 
-                        <div className="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-sm transition">
+                        <div className="ui-panel bg-white border border-slate-200 rounded-xl p-4 hover:shadow-sm transition">
                           <div className="flex items-start justify-between gap-3 flex-wrap">
                             <div>
                               <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 flex-wrap">
@@ -871,7 +875,7 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
 
       {/* Modal: Transfer Aset */}
       {showTransferModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <Dialog label="Transfer Aset" onClose={() => setShowTransferModal(false)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="p-6">
               <h2 className="text-lg font-bold text-slate-900 mb-1">Transfer Aset</h2>
@@ -882,8 +886,8 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                   <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{transferError}</div>
                 )}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Cabang Tujuan <span className="text-red-500">*</span></label>
-                  <select
+                  <label htmlFor="assets-id-AssetDetailClient-field-1" className="block text-sm font-semibold text-slate-700 mb-1.5">Cabang Tujuan <span className="text-red-500">*</span></label>
+                  <select id="assets-id-AssetDetailClient-field-1"
                     value={transferForm.toBranchId}
                     onChange={(e) => setTransferForm((f) => ({ ...f, toBranchId: e.target.value }))}
                     required
@@ -896,8 +900,8 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Alasan Transfer <span className="text-red-500">*</span></label>
-                  <textarea
+                  <label htmlFor="assets-id-AssetDetailClient-field-2" className="block text-sm font-semibold text-slate-700 mb-1.5">Alasan Transfer <span className="text-red-500">*</span></label>
+                  <textarea id="assets-id-AssetDetailClient-field-2"
                     value={transferForm.reason}
                     onChange={(e) => setTransferForm((f) => ({ ...f, reason: e.target.value }))}
                     required
@@ -911,18 +915,18 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                     Batal
                   </button>
                   <button type="submit" disabled={transferLoading} className="flex-1 bg-blue-600 text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-blue-700 transition disabled:opacity-60">
-                    {transferLoading ? "Memproses..." : "🔄 Transfer"}
+                    {transferLoading ? "Memproses..." : "Transfer"}
                   </button>
                 </div>
               </form>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
 
       {/* Modal: Buat Insiden */}
       {showIncidentModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <Dialog label="Buat Tiket Insiden" onClose={() => setShowIncidentModal(false)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="p-6">
               <h2 className="text-lg font-bold text-slate-900 mb-1">Buat Tiket Insiden</h2>
@@ -933,10 +937,10 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                   <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{incidentError}</div>
                 )}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                  <label htmlFor="assets-id-AssetDetailClient-field-3" className="block text-sm font-semibold text-slate-700 mb-1.5">
                     Jumlah Unit yang Rusak (pcs) <span className="text-red-500">*</span>
                   </label>
-                  <input
+                  <input id="assets-id-AssetDetailClient-field-3"
                     type="number"
                     min={1}
                     max={Math.max(reportableQty, 1)}
@@ -950,8 +954,8 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Deskripsi Masalah / Gejala <span className="text-red-500">*</span></label>
-                  <textarea
+                  <label htmlFor="assets-id-AssetDetailClient-field-4" className="block text-sm font-semibold text-slate-700 mb-1.5">Deskripsi Masalah / Gejala <span className="text-red-500">*</span></label>
+                  <textarea id="assets-id-AssetDetailClient-field-4"
                     value={incidentForm.description}
                     onChange={(e) => setIncidentForm((f) => ({ ...f, description: e.target.value }))}
                     required
@@ -969,18 +973,18 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                     Batal
                   </button>
                   <button type="submit" disabled={incidentLoading} className="flex-1 bg-red-600 text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-red-700 transition disabled:opacity-60">
-                    {incidentLoading ? "Menyimpan..." : "🔧 Buat Tiket"}
+                    {incidentLoading ? "Menyimpan..." : "Buat Tiket"}
                   </button>
                 </div>
               </form>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
 
       {/* Modal: Selesaikan Insiden */}
       {resolveIncidentId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <Dialog label="Selesaikan Insiden" onClose={() => setResolveIncidentId(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="p-6">
               <h2 className="text-lg font-bold text-slate-900 mb-1">Selesaikan Insiden</h2>
@@ -991,8 +995,8 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                   <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{resolveError}</div>
                 )}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Solusi Perbaikan <span className="text-red-500">*</span></label>
-                  <textarea
+                  <label htmlFor="assets-id-AssetDetailClient-field-5" className="block text-sm font-semibold text-slate-700 mb-1.5">Solusi Perbaikan <span className="text-red-500">*</span></label>
+                  <textarea id="assets-id-AssetDetailClient-field-5"
                     value={resolveForm.solution}
                     onChange={(e) => setResolveForm((f) => ({ ...f, solution: e.target.value }))}
                     required
@@ -1002,8 +1006,8 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Update Status Aset</label>
-                  <select
+                  <label htmlFor="assets-id-AssetDetailClient-field-6" className="block text-sm font-semibold text-slate-700 mb-1.5">Update Status Aset</label>
+                  <select id="assets-id-AssetDetailClient-field-6"
                     value={resolveForm.assetStatus}
                     onChange={(e) => setResolveForm((f) => ({ ...f, assetStatus: e.target.value }))}
                     className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -1024,11 +1028,11 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
               </form>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
       {/* Modal: Ajukan Selesai (IT Support) */}
       {proposeIncidentId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <Dialog label="Ajukan Penyelesaian Insiden" onClose={() => setProposeIncidentId(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="p-6">
               <h2 className="text-lg font-bold text-slate-900 mb-1">Ajukan Penyelesaian Insiden</h2>
@@ -1038,8 +1042,8 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                   <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{proposeError}</div>
                 )}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Solusi / Tindakan yang Dilakukan <span className="text-red-500">*</span></label>
-                  <textarea
+                  <label htmlFor="assets-id-AssetDetailClient-field-7" className="block text-sm font-semibold text-slate-700 mb-1.5">Solusi / Tindakan yang Dilakukan <span className="text-red-500">*</span></label>
+                  <textarea id="assets-id-AssetDetailClient-field-7"
                     value={proposeForm.solution}
                     onChange={(e) => setProposeForm((f) => ({ ...f, solution: e.target.value }))}
                     required rows={4}
@@ -1048,8 +1052,8 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Status Perangkat yang Diusulkan</label>
-                  <select
+                  <label htmlFor="assets-id-AssetDetailClient-field-8" className="block text-sm font-semibold text-slate-700 mb-1.5">Status Perangkat yang Diusulkan</label>
+                  <select id="assets-id-AssetDetailClient-field-8"
                     value={proposeForm.assetStatus}
                     onChange={(e) => setProposeForm((f) => ({ ...f, assetStatus: e.target.value }))}
                     className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -1067,18 +1071,18 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                     Batal
                   </button>
                   <button type="submit" disabled={proposeLoading} className="flex-1 bg-indigo-600 text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-indigo-700 transition disabled:opacity-60">
-                    {proposeLoading ? "Mengirim..." : "📝 Kirim Pengajuan"}
+                    {proposeLoading ? "Mengirim..." : "Kirim Pengajuan"}
                   </button>
                 </div>
               </form>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
 
       {/* Modal: Review Acc / Tolak (Admin) */}
       {reviewIncident && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <Dialog label="Review Pengajuan Penyelesaian" onClose={() => setReviewIncident(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="p-6">
               <h2 className="text-lg font-bold text-slate-900 mb-1">Review Pengajuan Penyelesaian</h2>
@@ -1136,12 +1140,12 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
               </div>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
 
       {/* Modal: Ajukan BAP */}
       {showBapModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <Dialog label="Ajukan Penghapusan Aset (BAP)" onClose={() => setShowBapModal(false)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="p-6">
               <h2 className="text-lg font-bold text-slate-900 mb-1">Ajukan Penghapusan Aset (BAP)</h2>
@@ -1156,10 +1160,10 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                  <label htmlFor="assets-id-AssetDetailClient-field-9" className="block text-sm font-semibold text-slate-700 mb-1.5">
                     File BAP (PDF / Gambar) <span className="text-red-500">*</span>
                   </label>
-                  <input
+                  <input id="assets-id-AssetDetailClient-field-9"
                     type="file"
                     accept=".pdf, image/png, image/jpeg, image/webp"
                     onChange={(e) => setBapFile(e.target.files?.[0] || null)}
@@ -1171,10 +1175,10 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                  <label htmlFor="assets-id-AssetDetailClient-field-10" className="block text-sm font-semibold text-slate-700 mb-1.5">
                     Diambil dari Stok <span className="text-red-500">*</span>
                   </label>
-                  <select
+                  <select id="assets-id-AssetDetailClient-field-10"
                     value={bapForm.sourceCondition}
                     onChange={(e) =>
                       setBapForm((f) => ({ ...f, sourceCondition: e.target.value, quantity: "1" }))
@@ -1194,10 +1198,10 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                  <label htmlFor="assets-id-AssetDetailClient-field-11" className="block text-sm font-semibold text-slate-700 mb-1.5">
                     Jumlah yang Dihapus (pcs) <span className="text-red-500">*</span>
                   </label>
-                  <input
+                  <input id="assets-id-AssetDetailClient-field-11"
                     type="number"
                     min="1"
                     max={Math.max(bapMaxQty, 1)}
@@ -1217,8 +1221,8 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Catatan / Alasan</label>
-                  <textarea
+                  <label htmlFor="assets-id-AssetDetailClient-field-12" className="block text-sm font-semibold text-slate-700 mb-1.5">Catatan / Alasan</label>
+                  <textarea id="assets-id-AssetDetailClient-field-12"
                     value={bapForm.notes}
                     onChange={(e) => setBapForm((f) => ({ ...f, notes: e.target.value }))}
                     rows={3}
@@ -1239,18 +1243,18 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                     disabled={bapLoading || bapMaxQty <= 0}
                     className="flex-1 bg-slate-900 text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {bapLoading ? "Mengajukan..." : "📄 Ajukan"}
+                    {bapLoading ? "Mengajukan..." : "Ajukan"}
                   </button>
                 </div>
               </form>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
 
       {/* Dialog: Tolak BAP dengan Catatan */}
       {showRejectBapDialog && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <Dialog label="Tolak Pengajuan BAP?" onClose={() => setShowRejectBapDialog(false)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
             <h2 className="text-lg font-bold text-slate-900 mb-1">Tolak Pengajuan BAP?</h2>
             <p className="text-sm text-slate-500 mb-4">
@@ -1281,7 +1285,7 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
               </div>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
     </>
   );

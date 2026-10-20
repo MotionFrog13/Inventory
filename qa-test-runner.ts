@@ -9,6 +9,7 @@ import * as incidents from "./qa/suites/incidents";
 import * as mdm from "./qa/suites/mdm";
 import * as transfers from "./qa/suites/transfers";
 import * as users from "./qa/suites/users";
+import * as security from "./qa/suites/security";
 
 // Urutan penting: suite belakangan mengandalkan route yang diuji lebih dulu.
 const SUITES: Record<string, () => Promise<void>> = {
@@ -22,6 +23,7 @@ const SUITES: Record<string, () => Promise<void>> = {
   incidents: incidents.run,
   activity: activity.run,
   mdm: mdm.run,
+  security: security.run,
 };
 
 async function main() {

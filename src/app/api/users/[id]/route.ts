@@ -3,7 +3,7 @@ import type { Role } from "@prisma/client";
 import { hashPassword, requireUserScope } from "@/lib/auth";
 import { validateAssignment } from "@/lib/scope";
 import { USER_PUBLIC_SELECT, assignmentRefsError, toPublicUser } from "@/lib/users";
-import { isUniqueViolation } from "@/lib/db-errors";
+import { isUniqueViolation, isSerializationConflict, isRecordNotFound } from "@/lib/db-errors";
 import { writeActivityLog } from "@/lib/logger";
 import {
   VALID_ROLES,
@@ -76,15 +76,6 @@ export async function PUT(request: NextRequest, { params }: Params) {
     const refError = await assignmentRefsError(db, assignment.divisionId, assignment.branchIds);
     if (refError) return errorResponse(refError, "Validasi gagal", 400);
 
-    // Organisasi tidak boleh kehilangan Super Admin terakhirnya — pada mode
-    // SaaS tidak ada operator yang dapat memulihkannya.
-    if (existing.role === "SUPER_ADMIN" && !isSuperAdmin(finalRole)) {
-      const others = await db.user.count({ where: { role: "SUPER_ADMIN", id: { not: id } } });
-      if (others === 0) {
-        return errorResponse("Organisasi harus memiliki minimal satu Super Admin", "Validasi gagal", 400);
-      }
-    }
-
     let hashedPassword: string | undefined;
     if (body.password) {
       if (String(body.password).length < 6) {
@@ -93,23 +84,31 @@ export async function PUT(request: NextRequest, { params }: Params) {
       hashedPassword = await hashPassword(String(body.password));
     }
 
-    const updated = await db.user.update({
-      where: { id },
-      data: {
-        ...(body.name && { name: String(body.name).trim() }),
-        ...(username && { username }),
-        ...(hashedPassword && { password: hashedPassword }),
-        email,
-        role: finalRole as Role,
-        divisionId: assignment.divisionId,
-        // Ganti seluruh penugasan outlet dalam satu operasi.
-        branches: {
-          deleteMany: {},
-          create: assignment.branchIds.map((branchId) => ({ branchId })),
+    // Count dan perubahan peran harus serializable: dua demosi bersamaan
+    // tidak boleh sama-sama menganggap akun lainnya akan tetap Super Admin.
+    const updated = await db.$transaction(async (tx) => {
+      if (existing.role === "SUPER_ADMIN" && !isSuperAdmin(finalRole)) {
+        const others = await tx.user.count({ where: { role: "SUPER_ADMIN", id: { not: id } } });
+        if (others === 0) throw new Error("LAST_SUPER_ADMIN");
+      }
+      return tx.user.update({
+        where: { id, role: existing.role },
+        data: {
+          ...(body.name && { name: String(body.name).trim() }),
+          ...(username && { username }),
+          ...(hashedPassword && { password: hashedPassword }),
+          email,
+          role: finalRole as Role,
+          divisionId: assignment.divisionId,
+          // Ganti seluruh penugasan outlet dalam satu operasi.
+          branches: {
+            deleteMany: {},
+            create: assignment.branchIds.map((branchId) => ({ branchId })),
+          },
         },
-      },
-      select: USER_PUBLIC_SELECT,
-    });
+        select: USER_PUBLIC_SELECT,
+      });
+    }, { isolationLevel: "Serializable" });
 
     const result = toPublicUser(updated);
     await writeActivityLog(
@@ -120,6 +119,12 @@ export async function PUT(request: NextRequest, { params }: Params) {
     );
     return successResponse(result, "Pengguna berhasil diperbarui");
   } catch (error) {
+    if (error instanceof Error && error.message === "LAST_SUPER_ADMIN") {
+      return errorResponse("Organisasi harus memiliki minimal satu Super Admin", "Validasi gagal", 400);
+    }
+    if (isSerializationConflict(error) || isRecordNotFound(error)) {
+      return errorResponse("Data pengguna berubah. Muat ulang sebelum mencoba lagi.", "Konflik perubahan", 409);
+    }
     if (isUniqueViolation(error)) {
       return errorResponse("Username atau email sudah digunakan", "Validasi gagal", 409);
     }
@@ -144,13 +149,25 @@ export async function DELETE(request: NextRequest, { params }: Params) {
       return errorResponse("Tidak dapat menghapus akun Anda sendiri", "Validasi gagal", 400);
     }
 
-    const existing = await db.user.findUnique({ where: { id }, select: { username: true } });
+    const existing = await db.user.findUnique({ where: { id }, select: { username: true, role: true } });
     if (!existing) return errorResponse("Pengguna tidak ditemukan", "Gagal", 404);
 
-    await db.user.delete({ where: { id } });
+    await db.$transaction(async (tx) => {
+      if (existing.role === "SUPER_ADMIN") {
+        const others = await tx.user.count({ where: { role: "SUPER_ADMIN", id: { not: id } } });
+        if (others === 0) throw new Error("LAST_SUPER_ADMIN");
+      }
+      await tx.user.delete({ where: { id, role: existing.role } });
+    }, { isolationLevel: "Serializable" });
     await writeActivityLog(ctx, "DELETE_USER", `Menghapus pengguna "${existing.username}" (ID: ${id})`, request);
     return successResponse(null, "Pengguna berhasil dihapus");
   } catch (error) {
+    if (error instanceof Error && error.message === "LAST_SUPER_ADMIN") {
+      return errorResponse("Organisasi harus memiliki minimal satu Super Admin", "Validasi gagal", 400);
+    }
+    if (isSerializationConflict(error) || isRecordNotFound(error)) {
+      return errorResponse("Data pengguna berubah. Muat ulang sebelum mencoba lagi.", "Konflik perubahan", 409);
+    }
     console.error("Delete user error:", error);
     return errorResponse("Terjadi kesalahan server", "Gagal menghapus pengguna", 500);
   }

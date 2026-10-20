@@ -26,8 +26,8 @@ const SKIP_PATTERNS = [
   // oleh /api/uploads (rewrite di next.config.ts).
 ];
 
-// Header identitas yang HANYA boleh diisi oleh middleware ini.
-// Wajib dibuang dari setiap request masuk agar klien tidak bisa memalsukan sesi.
+// Header identitas lama wajib dibuang dari setiap request masuk.
+// API memverifikasi cookie sendiri; header bukan bukti sesi.
 const IDENTITY_HEADERS = ["x-user-id", "x-user-org", "x-user-role", "x-user-name", "x-user-username"];
 
 function invalidSession(request: NextRequest, pathname: string) {
@@ -45,7 +45,7 @@ function invalidSession(request: NextRequest, pathname: string) {
   return response;
 }
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Buang header identitas bawaan klien SEBELUM percabangan apa pun.
@@ -58,6 +58,32 @@ export function proxy(request: NextRequest) {
   // Hanya bergantung pada env var server-side — header `x-next-prerender`
   // dapat dikirim siapa pun sehingga tidak dapat dipercaya.
   if (process.env.NEXT_PHASE === "phase-production-build") return sanitized();
+  // Cookie SameSite saja tidak menolak origin berbeda dalam situs yang sama.
+  // Origin/Referer dan Fetch Metadata berlaku juga untuk login/logout.
+  if (pathname.startsWith("/api/") && !["GET", "HEAD", "OPTIONS"].includes(request.method) &&
+      !MDM_DEVICE_PATHS.includes(pathname)) {
+    const source = request.headers.get("origin") ?? request.headers.get("referer");
+    let crossOrigin = request.headers.get("sec-fetch-site") === "cross-site";
+    if (source !== null) {
+      try {
+        const target = new URL(request.url);
+        // Host tetap diteruskan oleh Docker/Cloudflare Tunnel. Jangan mengambil
+        // x-forwarded-host dari pengunjung sebagai daftar origin yang dipercaya.
+        const host = request.headers.get("host");
+        if (host) target.host = host;
+        const forwardedProto = request.headers.get("x-forwarded-proto");
+        if (forwardedProto === "https" || forwardedProto === "http") target.protocol = `${forwardedProto}:`;
+        crossOrigin ||= new URL(source).origin !== target.origin;
+      } catch {
+        crossOrigin = true;
+      }
+    } else if (request.headers.get("sec-fetch-site") === "same-site") {
+      crossOrigin = true;
+    }
+    if (crossOrigin) {
+      return NextResponse.json({ success: false, error: "Akses ditolak", message: "Origin permintaan tidak diizinkan." }, { status: 403 });
+    }
+  }
   if (SKIP_PATTERNS.some((pattern) => pathname.startsWith(pattern))) return sanitized();
   if (MDM_DEVICE_PATHS.some((path) => pathname.startsWith(path))) return sanitized();
   if (PUBLIC_PATHS.some((path) => pathname.startsWith(path))) return sanitized();
@@ -86,28 +112,21 @@ export function proxy(request: NextRequest) {
     return invalidSession(request, pathname);
   }
 
-  // Activity log hanya untuk SUPER_ADMIN (pemeriksaan dini; route juga
-  // memeriksa peran dari database).
-  if (pathname.startsWith("/activity-logs") || pathname.startsWith("/api/activity-logs")) {
-    if (payload.role !== "SUPER_ADMIN") {
-      if (pathname.startsWith("/api/")) {
-        return NextResponse.json(
-          { success: false, error: "Akses ditolak", message: "Akses ditolak" },
-          { status: 403 }
-        );
-      }
+  // Halaman log tetap 403, tetapi keputusan peran berasal dari database.
+  if (pathname === "/activity-logs" || pathname.startsWith("/activity-logs/")) {
+    const { requireUserScope } = await import("./lib/auth");
+    const ctx = await requireUserScope(request);
+    if (!ctx.ok || ctx.user.role !== "SUPER_ADMIN") {
       return new NextResponse("Akses ditolak", { status: 403 });
     }
   }
 
-  // Divisi & outlet TIDAK diperiksa di sini: penugasan bisa berubah setelah
+  // Selain guard halaman log di atas, divisi/outlet diperiksa oleh konteks:
+  // penugasan bisa berubah setelah
   // login, jadi pengecekannya dibaca dari database oleh requireUserScope() /
   // getPageContext() / /api/auth/me pada setiap request (fail closed).
-  requestHeaders.set("x-user-id", payload.userId);
-  requestHeaders.set("x-user-org", payload.organizationId);
-  requestHeaders.set("x-user-role", payload.role);
-  requestHeaders.set("x-user-name", payload.name);
-  requestHeaders.set("x-user-username", payload.username);
+  // API membaca cookie bertanda tangan sendiri. Jangan meneruskan identitas
+  // lewat header (nama Unicode tidak dapat direpresentasikan sebagai ByteString).
 
   return NextResponse.next({ request: { headers: requestHeaders } });
 }

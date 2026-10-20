@@ -1,3 +1,5 @@
+
+import UiIcon from "@/components/UiIcon";
 import { AssetStock } from "@/lib/stock";
 
 /**
@@ -67,7 +69,7 @@ export default function StockSummary({ stock }: { stock: AssetStock }) {
   const filled = segments.filter((s) => s.qty > 0);
 
   return (
-    <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-xs">
+    <div className="ui-panel bg-white border border-slate-200/80 rounded-xl p-5 shadow-xs">
       <div className="flex items-end justify-between gap-4 flex-wrap mb-4">
         <div>
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
@@ -122,7 +124,7 @@ export default function StockSummary({ stock }: { stock: AssetStock }) {
 
       {stock.reservedQty > 0 && (
         <p className="text-xs text-violet-700 bg-violet-50 border border-violet-200/60 rounded-lg px-3 py-2 mt-3">
-          ⏳ {stock.reservedQty} pcs sedang menunggu persetujuan BAP dan tidak dapat
+          <UiIcon name="clock" className="inline-block align-middle" /> {stock.reservedQty} pcs sedang menunggu persetujuan BAP dan tidak dapat
           dipakai, dilaporkan rusak, atau diajukan ulang. Sisa stok tetap dapat digunakan.
         </p>
       )}

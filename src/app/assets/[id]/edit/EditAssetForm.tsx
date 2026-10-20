@@ -1,4 +1,8 @@
 "use client";
+import GuideCard from "@/components/GuideCard";
+import UiIcon from "@/components/UiIcon";
+import Dialog from "@/components/Dialog";
+
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -193,16 +197,17 @@ export default function EditAssetForm({ asset, branches, categories, divisionNam
           <span>/</span>
           <span className="text-slate-800 font-medium">Edit</span>
         </div>
-        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{currentTitle}</h1>
+        <h1 className="page-title">{currentTitle}</h1>
         <p className="text-slate-500 mt-1">{currentSubtitle}</p>
       </div>
 
       {/* Form */}
+      <GuideCard title="Isi informasi aset secara bertahap" icon="box">Kolom bertanda * wajib diisi. Pilih kategori dan lokasi yang sesuai, lalu lengkapi stok dan informasi pendukung. Data garansi dan catatan membantu tim menindaklanjuti aset.</GuideCard>
       <form onSubmit={handleSubmit} className="space-y-6">
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-800 rounded-xl px-4 py-3 text-sm font-medium">
-            ⚠️ {error}
+            <UiIcon name="warning" className="inline-block align-middle" /> {error}
           </div>
         )}
 
@@ -210,14 +215,14 @@ export default function EditAssetForm({ asset, branches, categories, divisionNam
         {!isSingleUnit && <StockSummary stock={stock} />}
 
         {/* Informasi Dasar */}
-        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-5">
+        <div className="ui-panel bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-5">
           <h2 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3">Informasi Dasar</h2>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+            <label htmlFor="assets-id-edit-EditAssetForm-field-1" className="block text-sm font-semibold text-slate-700 mb-1.5">
               Nama Perangkat <span className="text-red-500">*</span>
             </label>
-            <input
+            <input id="assets-id-edit-EditAssetForm-field-1"
               type="text" name="name" value={form.name} onChange={handleChange} required
               className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
@@ -225,8 +230,8 @@ export default function EditAssetForm({ asset, branches, categories, divisionNam
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Kategori <span className="text-red-500">*</span></label>
-              <select name="categoryId" value={form.categoryId} onChange={handleChange} required
+              <label htmlFor="assets-id-edit-EditAssetForm-field-2" className="block text-sm font-semibold text-slate-700 mb-1.5">Kategori <span className="text-red-500">*</span></label>
+              <select id="assets-id-edit-EditAssetForm-field-2" name="categoryId" value={form.categoryId} onChange={handleChange} required
                 className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
                 <option value="">Pilih Kategori...</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -238,7 +243,7 @@ export default function EditAssetForm({ asset, branches, categories, divisionNam
               <label className="block text-sm font-semibold text-slate-700 mb-1.5">Status <span className="text-red-500">*</span></label>
               {isSingleUnit ? (
                 <>
-                  <select name="status" value={form.status} onChange={handleChange} required
+                  <select name="status" aria-label="Status" value={form.status} onChange={handleChange} required
                     className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
                     {ASSET_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
@@ -257,23 +262,23 @@ export default function EditAssetForm({ asset, branches, categories, divisionNam
               )}
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Brand / Merk</label>
-              <input type="text" name="brand" value={form.brand} onChange={handleChange}
+              <label htmlFor="assets-id-edit-EditAssetForm-field-3" className="block text-sm font-semibold text-slate-700 mb-1.5">Brand / Merk</label>
+              <input id="assets-id-edit-EditAssetForm-field-3" type="text" name="brand" value={form.brand} onChange={handleChange}
                 className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Model / Seri</label>
-              <input type="text" name="model" value={form.model} onChange={handleChange}
+              <label htmlFor="assets-id-edit-EditAssetForm-field-4" className="block text-sm font-semibold text-slate-700 mb-1.5">Model / Seri</label>
+              <input id="assets-id-edit-EditAssetForm-field-4" type="text" name="model" value={form.model} onChange={handleChange}
                 className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Serial Number</label>
-              <input type="text" name="serialNumber" value={form.serialNumber} onChange={handleChange}
+              <label htmlFor="assets-id-edit-EditAssetForm-field-5" className="block text-sm font-semibold text-slate-700 mb-1.5">Serial Number</label>
+              <input id="assets-id-edit-EditAssetForm-field-5" type="text" name="serialNumber" value={form.serialNumber} onChange={handleChange}
                 className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Total Stok (pcs)</label>
-              <input type="number" name="quantity" value={form.quantity} onChange={handleChange} min={1} required
+              <label htmlFor="assets-id-edit-EditAssetForm-field-6" className="block text-sm font-semibold text-slate-700 mb-1.5">Total Stok (pcs)</label>
+              <input id="assets-id-edit-EditAssetForm-field-6" type="number" name="quantity" value={form.quantity} onChange={handleChange} min={1} required
                 className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
               <p className="text-xs text-slate-400 mt-1">
                 Penambahan stok masuk ke kondisi Aktif. Pengurangan hanya diambil dari
@@ -282,8 +287,8 @@ export default function EditAssetForm({ asset, branches, categories, divisionNam
               </p>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Lokasi (Cabang) <span className="text-red-500">*</span></label>
-              <select name="branchId" value={form.branchId} disabled
+              <label htmlFor="assets-id-edit-EditAssetForm-field-7" className="block text-sm font-semibold text-slate-700 mb-1.5">Lokasi (Cabang) <span className="text-red-500">*</span></label>
+              <select id="assets-id-edit-EditAssetForm-field-7" name="branchId" value={form.branchId} disabled
                 className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-400 bg-slate-50 cursor-not-allowed">
                 {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
@@ -291,40 +296,40 @@ export default function EditAssetForm({ asset, branches, categories, divisionNam
             </div>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Spesifikasi</label>
-            <textarea name="specs" value={form.specs} onChange={handleChange} rows={3}
+            <label htmlFor="assets-id-edit-EditAssetForm-field-8" className="block text-sm font-semibold text-slate-700 mb-1.5">Spesifikasi</label>
+            <textarea id="assets-id-edit-EditAssetForm-field-8" name="specs" value={form.specs} onChange={handleChange} rows={3}
               className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y" />
           </div>
         </div>
 
         {/* Tanggal & Garansi */}
-        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-5">
+        <div className="ui-panel bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-5">
           <h2 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3">Tanggal & Garansi</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Tanggal Pembelian</label>
-              <input type="date" name="purchaseDate" value={form.purchaseDate} onChange={handleChange}
+              <label htmlFor="assets-id-edit-EditAssetForm-field-9" className="block text-sm font-semibold text-slate-700 mb-1.5">Tanggal Pembelian</label>
+              <input id="assets-id-edit-EditAssetForm-field-9" type="date" name="purchaseDate" value={form.purchaseDate} onChange={handleChange}
                 className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Garansi Berakhir</label>
-              <input type="date" name="warrantyDate" value={form.warrantyDate} onChange={handleChange}
+              <label htmlFor="assets-id-edit-EditAssetForm-field-10" className="block text-sm font-semibold text-slate-700 mb-1.5">Garansi Berakhir</label>
+              <input id="assets-id-edit-EditAssetForm-field-10" type="date" name="warrantyDate" value={form.warrantyDate} onChange={handleChange}
                 className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
           </div>
         </div>
 
         {/* Catatan */}
-        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-5">
+        <div className="ui-panel bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-5">
           <h2 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3">Catatan Tambahan</h2>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Catatan</label>
-            <textarea name="notes" value={form.notes} onChange={handleChange} rows={3}
+            <label htmlFor="assets-id-edit-EditAssetForm-field-11" className="block text-sm font-semibold text-slate-700 mb-1.5">Catatan</label>
+            <textarea id="assets-id-edit-EditAssetForm-field-11" name="notes" value={form.notes} onChange={handleChange} rows={3}
               className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">URL Foto Perangkat</label>
-            <input type="url" name="photoUrl" value={form.photoUrl} onChange={handleChange}
+            <label htmlFor="assets-id-edit-EditAssetForm-field-12" className="block text-sm font-semibold text-slate-700 mb-1.5">URL Foto Perangkat</label>
+            <input id="assets-id-edit-EditAssetForm-field-12" type="url" name="photoUrl" value={form.photoUrl} onChange={handleChange}
               placeholder="https://..."
               className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400" />
           </div>
@@ -342,7 +347,7 @@ export default function EditAssetForm({ asset, branches, categories, divisionNam
                 onClick={() => setShowDeleteConfirm(true)}
                 className="text-red-600 font-semibold hover:underline text-sm border border-red-200 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition"
               >
-                🗑 Hapus Aset
+                <UiIcon name="trash" className="inline-block align-middle" /> Hapus Aset
               </button>
             )}
           </div>
@@ -360,7 +365,7 @@ export default function EditAssetForm({ asset, branches, categories, divisionNam
 
       {/* Confirm Delete Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <Dialog label="Hapus Aset?" onClose={() => setShowDeleteConfirm(false)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
             <h2 className="text-lg font-bold text-slate-900 mb-2">Hapus Aset?</h2>
             <p className="text-sm text-slate-600 mb-5">
@@ -371,11 +376,11 @@ export default function EditAssetForm({ asset, branches, categories, divisionNam
                 Batal
               </button>
               <button onClick={handleDelete} disabled={isDeleting} className="flex-1 bg-red-600 text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-red-700 transition disabled:opacity-60">
-                {isDeleting ? "Menghapus..." : "🗑 Ya, Hapus"}
+                {isDeleting ? "Menghapus..." : "Ya, Hapus"}
               </button>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );

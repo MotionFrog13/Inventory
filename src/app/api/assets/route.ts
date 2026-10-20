@@ -181,9 +181,10 @@ export async function POST(request: NextRequest) {
     const initialQuantity =
       quantity === undefined || quantity === null || quantity === ""
         ? 1
-        : parseInt(String(quantity), 10);
+        : Number(quantity);
 
-    if (!Number.isFinite(initialQuantity) || initialQuantity < 1) {
+    if ((typeof quantity !== "number" && typeof quantity !== "string" && quantity != null) ||
+        !Number.isInteger(initialQuantity) || initialQuantity < 1 || initialQuantity > 2147483647) {
       return errorResponse("Stok awal harus berupa angka minimal 1", "Validasi gagal", 400);
     }
 

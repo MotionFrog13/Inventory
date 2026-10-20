@@ -1,3 +1,7 @@
+import QuickStart from "@/components/QuickStart";
+
+import PageHeading from "@/components/PageHeading";
+import UiIcon from "@/components/UiIcon";
 import {
   formatDate,
   daysUntilWarrantyExpires,
@@ -109,7 +113,7 @@ export default async function DashboardPage() {
       orderBy: { updatedAt: "desc" },
     }),
 
-    // Alert 3: SLA Overdue (Tiket insiden unresolved > 7 hari)
+    // Alert 3: Insiden lebih dari 7 hari (Tiket insiden unresolved > 7 hari)
     db.incident.findMany({
       where: {
         resolvedAt: null,
@@ -178,10 +182,7 @@ export default async function DashboardPage() {
 
       {/* Welcome & Title */}
       <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Dashboard Utama</h1>
-          <p className="text-slate-500 mt-1">{dashboardSubtitle}</p>
-        </div>
+        <PageHeading eyebrow="Ruang kerja" title={<>Ringkasan inventaris</>} description={<>{dashboardSubtitle}</>} />
         {/* Badge divisi + outlet aktif */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${
@@ -189,7 +190,7 @@ export default async function DashboardPage() {
               ? "bg-purple-50 text-purple-700 border-purple-200"
               : "bg-indigo-50 text-indigo-700 border-indigo-200"
           }`}>
-            <span>🗂️</span>
+            <span><UiIcon name="layers" className="inline-block align-middle" /></span>
             Divisi: {divisionLabel}
           </span>
           <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${
@@ -197,42 +198,44 @@ export default async function DashboardPage() {
               ? "bg-purple-50 text-purple-700 border-purple-200"
               : "bg-emerald-50 text-emerald-700 border-emerald-200/60"
           }`}>
-            <span>🏢</span>
+            <span><UiIcon name="building" className="inline-block align-middle" /></span>
             Outlet: {branchBadge}
           </span>
         </div>
       </div>
 
+      <QuickStart canCreate={user.role === "SUPER_ADMIN" || user.role === "DIVISION_ADMIN"} />
+
       {/* Grid Statistik Ringkasan */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
         {/* Card 1: Total Aset */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs relative overflow-hidden transition hover:shadow-md">
+        <div className="ui-panel bg-white border border-slate-200 rounded-xl p-5 shadow-xs relative overflow-hidden transition hover:shadow-md">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Item {divisionLabel}</p>
               <h3 className="text-3xl font-extrabold text-slate-900 mt-2">{totalAssets}</h3>
             </div>
-            <span className="text-2xl p-2 bg-indigo-50 rounded-lg">📦</span>
+            <span className="text-2xl p-2 bg-indigo-50 rounded-lg"><UiIcon name="box" className="inline-block align-middle" /></span>
           </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+          <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
             <span>Aktif: <strong className="text-green-600 font-semibold">{activeAssets}</strong> pcs</span>
             <span>Perbaikan: <strong className="text-amber-500 font-semibold">{repairAssets}</strong> pcs</span>
-            <span>Retired: <strong>{retiredAssets}</strong> pcs</span>
+            <span>Tidak digunakan: <strong>{retiredAssets}</strong> pcs</span>
           </div>
         </div>
 
         {/* Card 2: Status Kerusakan */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs relative overflow-hidden transition hover:shadow-md">
+        <div className="ui-panel bg-white border border-slate-200 rounded-xl p-5 shadow-xs relative overflow-hidden transition hover:shadow-md">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Stok Rusak (Broken)</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Stok rusak</p>
               <h3 className="text-3xl font-extrabold text-slate-900 mt-2">
                 {brokenAssets}
                 <span className="text-base font-semibold text-slate-400 ml-1.5">pcs</span>
               </h3>
             </div>
-            <span className="text-2xl p-2 bg-red-50 rounded-lg">🔴</span>
+            <span className="text-2xl p-2 bg-red-50 rounded-lg"><UiIcon name="warning" className="inline-block align-middle" /></span>
           </div>
           <div className="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
@@ -241,7 +244,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* Card 3: Cabang */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs relative overflow-hidden transition hover:shadow-md">
+        <div className="ui-panel bg-white border border-slate-200 rounded-xl p-5 shadow-xs relative overflow-hidden transition hover:shadow-md">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -255,7 +258,7 @@ export default async function DashboardPage() {
                 <h3 className="text-3xl font-extrabold text-slate-900 mt-2">{totalBranches}</h3>
               )}
             </div>
-            <span className="text-2xl p-2 bg-blue-50 rounded-lg">🏢</span>
+            <span className="text-2xl p-2 bg-blue-50 rounded-lg"><UiIcon name="building" className="inline-block align-middle" /></span>
           </div>
           <div className="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500">
             <span>
@@ -267,15 +270,15 @@ export default async function DashboardPage() {
         </div>
 
         {/* Card 4: Insiden Unresolved */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs relative overflow-hidden transition hover:shadow-md">
+        <div className="ui-panel bg-white border border-slate-200 rounded-xl p-5 shadow-xs relative overflow-hidden transition hover:shadow-md">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tiket Insiden Aktif</p>
               <h3 className="text-3xl font-extrabold text-slate-900 mt-2">{unresolvedIncidents}</h3>
             </div>
-            <span className="text-2xl p-2 bg-amber-50 rounded-lg">🔧</span>
+            <span className="text-2xl p-2 bg-amber-50 rounded-lg"><UiIcon name="tool" className="inline-block align-middle" /></span>
           </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 flex items-center justify-between">
+          <div className="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 flex flex-wrap gap-2 items-center justify-between">
             <span>Belum selesai diperbaiki</span>
             <Link href="/incidents" className="text-indigo-600 font-semibold hover:underline">Lihat Semua →</Link>
           </div>
@@ -286,7 +289,7 @@ export default async function DashboardPage() {
       {/* Ringkasan per Divisi — hanya SUPER_ADMIN (pengguna divisi hanya
           melihat divisinya sendiri, jadi tabel ini tidak memberi informasi) */}
       {isSuperAdmin && divisionRows.length > 0 && (
-        <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-xs">
+        <div className="ui-panel bg-white border border-slate-200/80 rounded-xl p-5 shadow-xs">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-bold text-slate-900">Ringkasan per Divisi</h2>
             <Link href="/divisions" className="text-xs font-semibold text-indigo-600 hover:underline">
@@ -294,7 +297,7 @@ export default async function DashboardPage() {
             </Link>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="inventory-table w-full text-left text-sm">
               <thead>
                 <tr className="text-xs text-slate-500 uppercase tracking-wider border-b border-slate-100">
                   <th className="py-2 font-semibold">Divisi</th>
@@ -325,17 +328,17 @@ export default async function DashboardPage() {
       )}
 
       {/* Widget Alerts / Peringatan Sistem */}
-      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-6">
+      <div className="ui-panel bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-6">
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div className="flex items-center gap-2">
-            <span className="text-xl">⚠️</span>
+            <span className="text-xl"><UiIcon name="warning" className="inline-block align-middle" /></span>
             <h2 className="text-lg font-bold text-slate-900">
-              Sistem Peringatan {divisionLabel} (Business Alerts)
+              Perlu perhatian · {divisionLabel}
             </h2>
           </div>
           {!hasAlerts && (
             <span className="text-xs bg-green-50 text-green-700 font-semibold px-2.5 py-1 rounded-full border border-green-200">
-              Sistem Normal ✅
+              Sistem Normal <UiIcon name="check" className="inline-block align-middle" />
             </span>
           )}
         </div>
@@ -345,7 +348,7 @@ export default async function DashboardPage() {
           <div className="py-8 text-center text-slate-500">
             <div className="text-4xl mb-2">🎉</div>
             <p className="font-semibold text-slate-700">Semua aman &amp; terkendali!</p>
-            <p className="text-xs text-slate-400 mt-1">Tidak ada isu garansi, insiden terlambat (SLA Overdue), atau perangkat rusak tanpa tiket insiden saat ini.</p>
+            <p className="text-xs text-slate-400 mt-1">Tidak ada isu garansi, insiden yang melewati 7 hari, atau perangkat rusak tanpa tiket insiden saat ini.</p>
           </div>
         )}
 
@@ -353,14 +356,14 @@ export default async function DashboardPage() {
         {brokenAssetsPending.length > 0 && (
           <div className="border border-red-200 rounded-lg bg-red-50/50 overflow-hidden">
             <div className="bg-red-50 border-b border-red-200 px-4 py-3 flex items-center gap-2.5">
-              <span className="text-red-600 text-lg">🔴</span>
+              <span className="text-red-600 text-lg"><UiIcon name="warning" className="inline-block align-middle" /></span>
               <div>
-                <h3 className="font-bold text-red-900 text-sm">Broken Asset Pending ({brokenAssetsPending.length} Perangkat)</h3>
+                <h3 className="font-bold text-red-900 text-sm">Aset rusak tanpa tiket ({brokenAssetsPending.length} Perangkat)</h3>
                 <p className="text-xs text-red-700">Aset berstatus RUSAK (BROKEN) namun belum terdaftar di tiket insiden manapun.</p>
               </div>
             </div>
             <div className="p-4 overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="inventory-table w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="text-slate-500 border-b border-red-100">
                     <th className="pb-2 font-semibold uppercase tracking-wider">Nama Perangkat</th>
@@ -386,7 +389,7 @@ export default async function DashboardPage() {
                           href={`/incidents?createAssetId=${asset.id}`}
                           className="inline-block bg-red-600 text-white font-semibold px-3 py-1 rounded-md text-xs hover:bg-red-700 transition"
                         >
-                          🔧 Buat Tiket
+                          <UiIcon name="tool" className="inline-block align-middle" /> Buat Tiket
                         </Link>
                       </td>
                     </tr>
@@ -401,14 +404,14 @@ export default async function DashboardPage() {
         {slaOverdueIncidents.length > 0 && (
           <div className="border border-amber-200 rounded-lg bg-amber-50/50 overflow-hidden">
             <div className="bg-amber-50 border-b border-amber-200 px-4 py-3 flex items-center gap-2.5">
-              <span className="text-amber-600 text-lg">🔧</span>
+              <span className="text-amber-600 text-lg"><UiIcon name="tool" className="inline-block align-middle" /></span>
               <div>
-                <h3 className="font-bold text-amber-900 text-sm">SLA Overdue ({slaOverdueIncidents.length} Tiket)</h3>
+                <h3 className="font-bold text-amber-900 text-sm">Insiden lebih dari 7 hari ({slaOverdueIncidents.length} Tiket)</h3>
                 <p className="text-xs text-amber-700">Tiket insiden aktif yang sudah berjalan lebih dari 7 hari namun belum selesai diperbaiki (resolved).</p>
               </div>
             </div>
             <div className="p-4 overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="inventory-table w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="text-slate-500 border-b border-amber-100">
                     <th className="pb-2 font-semibold uppercase tracking-wider">Perangkat</th>
@@ -449,14 +452,14 @@ export default async function DashboardPage() {
         {expiringAssets.length > 0 && (
           <div className="border border-slate-200 rounded-lg overflow-hidden">
             <div className="bg-slate-50 border-b border-slate-200 px-4 py-3 flex items-center gap-2.5">
-              <span className="text-slate-600 text-lg">⚠️</span>
+              <span className="text-slate-600 text-lg"><UiIcon name="warning" className="inline-block align-middle" /></span>
               <div>
-                <h3 className="font-bold text-slate-900 text-sm">Garansi Expiring ({expiringAssets.length} Aset)</h3>
+                <h3 className="font-bold text-slate-900 text-sm">Garansi perlu diperiksa ({expiringAssets.length} Aset)</h3>
                 <p className="text-xs text-slate-500">Aset dengan masa garansi habis dalam ≤ 30 hari ke depan (termasuk yang sudah habis).</p>
               </div>
             </div>
             <div className="p-4 overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="inventory-table w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="text-slate-500 border-b border-slate-100">
                     <th className="pb-2 font-semibold uppercase tracking-wider">Nama Perangkat</th>

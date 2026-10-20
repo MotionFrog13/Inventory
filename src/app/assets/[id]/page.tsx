@@ -1,3 +1,6 @@
+import GuideCard from "@/components/GuideCard";
+import UiIcon from "@/components/UiIcon";
+
 import { notFound } from "next/navigation";
 import {
   formatDate,
@@ -117,7 +120,7 @@ export default async function AssetDetailPage({
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{asset.name}</h1>
+            <h1 className="page-title">{asset.name}</h1>
             <span className={`status-badge ${ASSET_STATUS_COLORS[asset.status] || STATUS_COLOR_FALLBACK}`}>
               {ASSET_STATUS_LABELS[asset.status] || asset.status}
             </span>
@@ -136,7 +139,7 @@ export default async function AssetDetailPage({
               href={`/assets/${asset.id}/edit`}
               className="bg-white border border-slate-200 text-slate-700 font-semibold px-4 py-2 rounded-lg text-sm hover:bg-slate-50 transition shadow-xs"
             >
-              ✏️ Edit Aset
+              <UiIcon name="edit" className="inline-block align-middle" /> Edit Aset
             </Link>
           </div>
         )}
@@ -156,6 +159,8 @@ export default async function AssetDetailPage({
           }
         </div>
       )}
+
+      <GuideCard title="Kelola aset dari satu halaman" icon="info">Periksa rincian stok di bawah, lalu pilih tindakan yang diperlukan. Insiden untuk kerusakan, mutasi untuk perpindahan cabang, dan BAP untuk penghapusan stok yang disertai dokumen.</GuideCard>
 
       {/* Client Component (Tabs, Modal Transfer, Modal Insiden) */}
       <AssetDetailClient

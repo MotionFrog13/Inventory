@@ -112,7 +112,7 @@ export function setupFixtures() {
   // PNG 1x1 transparan dibuat dinamis agar tidak bergantung pada path lokal
   const png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
   fs.writeFileSync(fixtures.image, Buffer.from(png, "base64"));
-  fs.writeFileSync(fixtures.smallPdf, "%PDF-1.4 ... dummy small pdf file content");
+  fs.writeFileSync(fixtures.smallPdf, "%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF\n");
   const large = Buffer.alloc(5.2 * 1024 * 1024);
   large.write("%PDF-1.4 ... dummy large pdf file content");
   fs.writeFileSync(fixtures.largePdf, large);

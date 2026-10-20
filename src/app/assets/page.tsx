@@ -1,3 +1,7 @@
+
+import UiIcon from "@/components/UiIcon";
+import PageHeading from "@/components/PageHeading";
+import GuideCard from "@/components/GuideCard";
 import {
   formatDate,
   ASSET_STATUS_LABELS,
@@ -156,12 +160,12 @@ async function AssetListContent({
   return (
     <>
       {/* Filter Bar */}
-      <form method="GET" action="/assets" className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-        <div className="flex flex-wrap gap-3 items-end">
+      <form method="GET" action="/assets" className="ui-panel bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+        <div className="asset-filter-controls flex flex-wrap gap-3 items-end">
           {/* Search */}
-          <div className="flex-1 min-w-[200px]">
-            <label className={labelClass}>Cari</label>
-            <input
+          <div className="flex-1 min-w-0 basis-[200px]">
+            <label htmlFor="assets-page-field-1" className={labelClass}>Cari</label>
+            <input id="assets-page-field-1"
               type="text"
               name="search"
               defaultValue={searchParams.search || ""}
@@ -173,8 +177,8 @@ async function AssetListContent({
           {/* Filter Divisi — hanya SUPER_ADMIN; peran lain terkunci divisinya */}
           {isSuperAdmin && (
             <div className="min-w-[150px]">
-              <label className={labelClass}>Divisi</label>
-              <select name="divisionId" defaultValue={searchParams.divisionId || ""} className={selectClass}>
+              <label htmlFor="assets-page-field-2" className={labelClass}>Divisi</label>
+              <select id="assets-page-field-2" name="divisionId" defaultValue={searchParams.divisionId || ""} className={selectClass}>
                 <option value="">Semua Divisi</option>
                 {divisions.map((d) => (
                   <option key={d.id} value={d.id}>{d.name}</option>
@@ -189,11 +193,11 @@ async function AssetListContent({
             <label className={labelClass}>Cabang</label>
             {lockedBranch ? (
               <div className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-500 bg-slate-100 flex items-center gap-1.5 cursor-not-allowed">
-                <span>🏢</span>
+                <span><UiIcon name="building" className="inline-block align-middle" /></span>
                 <span className="truncate">{lockedBranch.name}</span>
               </div>
             ) : (
-              <select name="branchId" defaultValue={searchParams.branchId || ""} className={selectClass}>
+              <select aria-label="Cabang" name="branchId" defaultValue={searchParams.branchId || ""} className={selectClass}>
                 <option value="">{isSuperAdmin ? "Semua Cabang" : "Semua Outlet Saya"}</option>
                 {branches.map((b) => (
                   <option key={b.id} value={b.id}>{b.name}</option>
@@ -204,8 +208,8 @@ async function AssetListContent({
 
           {/* Filter Kategori */}
           <div className="min-w-[160px]">
-            <label className={labelClass}>Kategori</label>
-            <select name="categoryId" defaultValue={searchParams.categoryId || ""} className={selectClass}>
+            <label htmlFor="assets-page-field-3" className={labelClass}>Kategori</label>
+            <select id="assets-page-field-3" name="categoryId" defaultValue={searchParams.categoryId || ""} className={selectClass}>
               <option value="">Semua Kategori</option>
               {categoryOptions.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
@@ -215,8 +219,8 @@ async function AssetListContent({
 
           {/* Filter Status */}
           <div className="min-w-[140px]">
-            <label className={labelClass}>Status</label>
-            <select name="status" defaultValue={searchParams.status || ""} className={selectClass}>
+            <label htmlFor="assets-page-field-4" className={labelClass}>Status</label>
+            <select id="assets-page-field-4" name="status" defaultValue={searchParams.status || ""} className={selectClass}>
               <option value="">Semua Status</option>
               {ASSET_STATUSES.map((s) => (
                 <option key={s} value={s}>{ASSET_STATUS_LABELS[s] || s}</option>
@@ -226,8 +230,8 @@ async function AssetListContent({
 
           {/* Filter Tanggal Dari */}
           <div className="min-w-[145px]">
-            <label className={labelClass}>Dari Tanggal</label>
-            <input
+            <label htmlFor="assets-page-field-5" className={labelClass}>Dari Tanggal</label>
+            <input id="assets-page-field-5"
               type="date"
               name="dateFrom"
               min={minDate}
@@ -239,8 +243,8 @@ async function AssetListContent({
 
           {/* Filter Tanggal Sampai */}
           <div className="min-w-[145px]">
-            <label className={labelClass}>Sampai Tanggal</label>
-            <input
+            <label htmlFor="assets-page-field-6" className={labelClass}>Sampai Tanggal</label>
+            <input id="assets-page-field-6"
               type="date"
               name="dateTo"
               min={minDate}
@@ -255,7 +259,7 @@ async function AssetListContent({
               type="submit"
               className="bg-indigo-600 text-white font-semibold px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 active:scale-[0.98] transition-all duration-200 ease-in-out"
             >
-              🔍 Filter
+              <UiIcon name="search" className="inline-block align-middle" /> Filter
             </button>
             <Link
               href="/assets"
@@ -274,7 +278,7 @@ async function AssetListContent({
           {searchParams.search && <> untuk pencarian &ldquo;<em>{searchParams.search}</em>&rdquo;</>}
           {(dateFrom || dateTo) && (
             <span className="ml-1 text-xs bg-indigo-50 text-indigo-700 font-semibold px-2 py-0.5 rounded-full border border-indigo-100">
-              📅 {dateFrom || "awal"} → {dateTo || "sekarang"}
+              <UiIcon name="calendar" className="inline-block align-middle" /> {dateFrom || "awal"} → {dateTo || "sekarang"}
             </span>
           )}
         </span>
@@ -284,10 +288,10 @@ async function AssetListContent({
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
+      <div className="ui-panel bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
         {assets.length === 0 ? (
           <div className="py-16 text-center">
-            <div className="text-5xl mb-3 opacity-60">📦</div>
+            <div className="text-5xl mb-3 opacity-60"><UiIcon size={40} name="box" className="inline-block align-middle" /></div>
             <p className="font-semibold text-slate-700">Tidak ada aset ditemukan</p>
             <p className="text-xs text-slate-400 mt-1">
               {isAdmin ? "Coba ubah filter atau tambah aset baru" : "Coba ubah filter pencarian"}
@@ -302,7 +306,7 @@ async function AssetListContent({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
+            <table className="inventory-table w-full text-sm text-left">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
                   <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Nama Perangkat</th>
@@ -352,8 +356,8 @@ async function AssetListContent({
                         {asset.warrantyDate ? (
                           <span>
                             {formatDate(asset.warrantyDate)}
-                            {warrantyExpired && <span className="block text-xs font-semibold text-red-500">⚠ Kadaluarsa</span>}
-                            {warrantyUrgent && <span className="block text-xs font-semibold text-amber-500">⚠ Segera habis</span>}
+                            {warrantyExpired && <span className="block text-xs font-semibold text-red-500"><UiIcon name="warning" className="inline-block align-middle" /> Kadaluarsa</span>}
+                            {warrantyUrgent && <span className="block text-xs font-semibold text-amber-500"><UiIcon name="warning" className="inline-block align-middle" /> Segera habis</span>}
                           </span>
                         ) : (
                           <span className="text-slate-300">—</span>
@@ -444,10 +448,7 @@ export default async function AssetsPage({
     <div className="space-y-5 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{title}</h1>
-          <p className="text-slate-500 mt-1">{subtitle}</p>
-        </div>
+        <PageHeading eyebrow="Inventaris & operasional" title={<>{title}</>} description={<>{subtitle}</>} />
         {isAdminRole(user.role) && (
           <Link
             href="/assets/new"
@@ -457,6 +458,8 @@ export default async function AssetsPage({
           </Link>
         )}
       </div>
+      <GuideCard title="Temukan aset yang Anda butuhkan" icon="box">Gunakan pencarian dan filter untuk mempersempit daftar. Buka Detail untuk melihat stok, melaporkan insiden, mengajukan mutasi, atau mengajukan penghapusan (BAP).</GuideCard>
+
 
       <Suspense fallback={
         <div className="flex items-center justify-center py-20">

@@ -105,9 +105,8 @@ export async function getPageContext(): Promise<RequestContext | null> {
 }
 
 /**
- * Identitas dari header yang diisi middleware (src/proxy.ts). Header ini
- * dibuang dari setiap request masuk sebelum diisi, sehingga tidak dapat
- * dipalsukan klien.
+ * Verifikasi cookie lagi di route: header identitas bukan bukti autentikasi.
+ * Tetap fail closed bila proxy tidak berjalan atau dilewati.
  */
 export function getAuthUser(request: NextRequest): {
   userId: string;
@@ -116,13 +115,8 @@ export function getAuthUser(request: NextRequest): {
   name: string;
   username: string;
 } | null {
-  const userId = request.headers.get("x-user-id");
-  const organizationId = request.headers.get("x-user-org");
-  const role = request.headers.get("x-user-role");
-  const name = request.headers.get("x-user-name");
-  const username = request.headers.get("x-user-username");
-  if (!userId || !organizationId || !role || !name) return null;
-  return { userId, organizationId, role, name, username: username || "" };
+  const token = request.cookies.get("token")?.value;
+  return token ? verifyToken(token) : null;
 }
 
 /**

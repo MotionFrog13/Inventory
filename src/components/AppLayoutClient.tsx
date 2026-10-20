@@ -127,8 +127,8 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
           onMenuClick={() => setDrawerOpenedAt(pathname)}
           menuButtonRef={menuButtonRef}
         />
-        <main className="main-content">
-          {user?.access === "unassigned" ? <UnassignedNotice /> : children}
+        <main className="main-content" id="main-content" tabIndex={-1}>
+          <div className="content-container">{user?.access === "unassigned" ? <UnassignedNotice /> : children}</div>
         </main>
       </div>
     </div>

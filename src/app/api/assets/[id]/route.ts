@@ -9,7 +9,7 @@ import {
 import { assetAccessDenied } from "@/lib/scope";
 import { requireUserScope } from "@/lib/auth";
 import { writeActivityLog } from "@/lib/logger";
-import { isUniqueViolation } from "@/lib/db-errors";
+import { isUniqueViolation, isRecordNotFound } from "@/lib/db-errors";
 import {
   AssetStock,
   STOCK_SELECT,
@@ -17,6 +17,7 @@ import {
   initialStock,
   isStockCondition,
   stockUpdateData,
+  stockMutationWhere,
 } from "@/lib/stock";
 
 export const dynamic = "force-dynamic";
@@ -229,9 +230,10 @@ export async function PUT(
     };
 
     if (quantity !== undefined && quantity !== null && quantity !== "") {
-      const newTotal = parseInt(String(quantity), 10);
+      const newTotal = Number(quantity);
 
-      if (!Number.isFinite(newTotal) || newTotal < 1) {
+      if ((typeof quantity !== "number" && typeof quantity !== "string") ||
+          !Number.isInteger(newTotal) || newTotal < 1 || newTotal > 2147483647) {
         return errorResponse(
           "Total stok harus berupa angka minimal 1",
           "Validasi gagal",
@@ -300,7 +302,7 @@ export async function PUT(
     }
 
     const asset = await db.asset.update({
-      where: { id },
+      where: stockMutationWhere(existingAsset),
       data: {
         ...(name !== undefined && { name }),
         ...(categoryId !== undefined && { categoryId }),
@@ -342,6 +344,9 @@ export async function PUT(
   } catch (error) {
     if (isUniqueViolation(error)) {
       return errorResponse("Serial number sudah terdaftar untuk kategori ini", "Validasi gagal", 400);
+    }
+    if (isRecordNotFound(error)) {
+      return errorResponse("Stok atau lokasi aset berubah. Muat ulang sebelum mencoba lagi.", "Konflik perubahan", 409);
     }
     console.error("Update asset error:", error);
     return errorResponse("Terjadi kesalahan server", "Gagal memperbarui aset", 500);

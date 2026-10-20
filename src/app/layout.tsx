@@ -1,21 +1,11 @@
 import type { Metadata } from "next";
-import { Roboto, Ubuntu } from "next/font/google";
+import { Geist } from "next/font/google";
 import "./globals.css";
 import AppLayoutClient from "@/components/AppLayoutClient";
 import { Suspense } from "react";
 
 
-const roboto = Roboto({
-  variable: "--font-roboto",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "700", "900"],
-});
-
-const ubuntu = Ubuntu({
-  variable: "--font-ubuntu",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "700"],
-});
+const geist = Geist({ variable: "--font-geist", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Inventory - Sistem Inventaris Aset",
@@ -30,9 +20,10 @@ export default function RootLayout({
   return (
     <html
       lang="id"
-      className={`${roboto.variable} ${ubuntu.variable} h-full antialiased`}
+      className={`${geist.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-slate-50 text-slate-900">
+        <a href="#main-content" className="skip-link">Lewati ke konten utama</a>
         <Suspense fallback={
           <div className="min-h-screen flex items-center justify-center bg-slate-50">
             <div className="flex flex-col items-center gap-2">

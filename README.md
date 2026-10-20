@@ -169,7 +169,7 @@ docker-*.bat       one-click launchers for Windows (dev, prod, tunnel)
 
 Known limitations of the current release — see [SECURITY.md](SECURITY.md) for how to report a vulnerability:
 
-- There is no login rate limiting, password reset, or email verification yet. Put the app behind a reverse proxy with rate limiting and HTTPS — with Cloudflare Tunnel, add a Cloudflare rate limiting rule for `/api/auth/login` or protect the site with Cloudflare Access.
+- Login is throttled per process (10 attempts per login identifier in 15 minutes and 120 attempts overall per minute). Counters reset on restart and are not shared between instances; username and email aliases have separate counters. Use HTTPS and an edge/shared rate limiter for production — with Cloudflare Tunnel, add a Cloudflare rate limiting rule for `/api/auth/login` or protect the site with Cloudflare Access. Password reset and email verification are not implemented yet.
 - `saas` mode has no public sign-up and is **not** ready for hosting untrusted organizations.
 
 ## Roadmap

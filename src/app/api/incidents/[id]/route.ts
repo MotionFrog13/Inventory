@@ -11,7 +11,9 @@ import {
   isStockCondition,
   moveStock,
   stockUpdateData,
+  stockMutationWhere,
 } from "@/lib/stock";
+import { isRecordNotFound } from "@/lib/db-errors";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +27,26 @@ const VALID_RESOLVED_STATUSES = STOCK_CONDITIONS;
 // (BAP_PENDING) atau stok sudah habis dihapus (BAP) — BAP parsial tidak
 // memblokir resolusi insiden atas pcs lain yang masih ada.
 const BAP_LOCKED_STATUSES = ["BAP_PENDING", "BAP"];
+
+function incidentMutationWhere(incident: {
+  id: string;
+  resolveStatus: string | null;
+  resolvedAt: Date | null;
+  proposedAt: Date | null;
+  pendingSolution: string | null;
+  pendingAssetStatus: string | null;
+  asset: Parameters<typeof stockMutationWhere>[0];
+}) {
+  return {
+    id: incident.id,
+    resolveStatus: incident.resolveStatus,
+    resolvedAt: incident.resolvedAt,
+    proposedAt: incident.proposedAt,
+    pendingSolution: incident.pendingSolution,
+    pendingAssetStatus: incident.pendingAssetStatus,
+    asset: { is: stockMutationWhere(incident.asset) },
+  };
+}
 
 // Helper: ambil incident dengan validasi akses divisi + outlet. Insiden
 // organisasi lain tidak terlihat oleh client tenant (→ 404).
@@ -106,7 +128,7 @@ export async function PUT(
       }
 
       const updated = await db.incident.update({
-        where: { id },
+        where: incidentMutationWhere(incident),
         data: {
           resolveStatus: "PENDING_REVIEW",
           pendingSolution: solution,
@@ -176,7 +198,7 @@ export async function PUT(
 
       const [updatedIncident] = await db.$transaction([
         db.incident.update({
-          where: { id },
+          where: incidentMutationWhere(incident),
           data: {
             solution: finalSolution,
             resolveStatus: "APPROVED",
@@ -189,7 +211,7 @@ export async function PUT(
           include: { asset: { select: { id: true, name: true } } },
         }),
         db.asset.update({
-          where: { id: incident.assetId },
+          where: stockMutationWhere(incident.asset),
           data: stockUpdateData(nextStock),
         }),
       ]);
@@ -222,7 +244,7 @@ export async function PUT(
       }
 
       const updated = await db.incident.update({
-        where: { id },
+        where: incidentMutationWhere(incident),
         data: {
           resolveStatus: "REJECTED",
           pendingSolution: null,
@@ -287,7 +309,7 @@ export async function PUT(
 
       const [updatedIncident] = await db.$transaction([
         db.incident.update({
-          where: { id },
+          where: incidentMutationWhere(incident),
           data: {
             solution,
             resolveStatus: "APPROVED",
@@ -301,7 +323,7 @@ export async function PUT(
         ...(nextStock
           ? [
               db.asset.update({
-                where: { id: incident.assetId },
+                where: stockMutationWhere(incident.asset),
                 data: stockUpdateData(nextStock),
               }),
             ]
@@ -327,6 +349,9 @@ export async function PUT(
     return errorResponse("Action tidak dikenali. Gunakan: propose | approve | reject | resolve", "Validasi gagal", 400);
 
   } catch (error) {
+    if (isRecordNotFound(error)) {
+      return errorResponse("Insiden, stok, atau lokasi aset berubah. Muat ulang sebelum mencoba lagi.", "Konflik perubahan", 409);
+    }
     console.error("Incident PUT error:", error);
     return errorResponse("Terjadi kesalahan server", "Gagal memproses permintaan", 500);
   }
@@ -356,7 +381,7 @@ export async function DELETE(
       where: { id },
       include: {
         asset: {
-          select: { divisionId: true, branchId: true, name: true, ...STOCK_SELECT },
+          select: { id: true, status: true, divisionId: true, branchId: true, name: true, ...STOCK_SELECT },
         },
       },
     });
@@ -387,11 +412,11 @@ export async function DELETE(
         );
 
     await db.$transaction([
-      db.incident.delete({ where: { id } }),
+      db.incident.delete({ where: incidentMutationWhere(existingIncident) }),
       ...(restoredStock
         ? [
             db.asset.update({
-              where: { id: existingIncident.assetId },
+              where: stockMutationWhere(existingIncident.asset),
               data: stockUpdateData(restoredStock),
             }),
           ]
@@ -408,6 +433,9 @@ export async function DELETE(
 
     return successResponse(null, "Insiden berhasil dihapus");
   } catch (error) {
+    if (isRecordNotFound(error)) {
+      return errorResponse("Insiden, stok, atau lokasi aset berubah. Muat ulang sebelum mencoba lagi.", "Konflik perubahan", 409);
+    }
     console.error("Delete incident error:", error);
     return errorResponse("Terjadi kesalahan server", "Gagal menghapus insiden", 500);
   }

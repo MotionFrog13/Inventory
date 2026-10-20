@@ -6,6 +6,7 @@ import { errorResponse, successResponse } from "@/lib/utils";
 import { UNASSIGNED_MESSAGE, resolveScope } from "@/lib/scope";
 import { writeActivityLog } from "@/lib/logger";
 import { getAppMode } from "@/lib/app-mode";
+import { loginAccountKey, loginLimiter } from "@/lib/login-rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -60,6 +61,9 @@ async function findLoginUser(identifier: string, orgCode: string) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return errorResponse("Format permintaan login tidak valid", "Validasi gagal", 400);
+    }
     // `username` diterima sebagai alias `identifier` untuk klien lama.
     const identifier = String(body.identifier ?? body.username ?? "").trim().toLowerCase();
     const password = typeof body.password === "string" ? body.password : "";
@@ -67,6 +71,19 @@ export async function POST(request: NextRequest) {
 
     if (!identifier || !password) {
       return errorResponse("Email/username dan password wajib diisi", "Validasi gagal", 400);
+    }
+
+    if (identifier.length > 254 || orgCode.length > 32 || password.length > 1024) {
+      return errorResponse("Input login terlalu panjang", "Validasi gagal", 400);
+    }
+    // Email unik global; kode organisasi tidak boleh menjadi jalan melewati
+    // batas percobaan pada akun email yang sama. Tidak mempercayai IP dari klien.
+    const key = loginAccountKey(identifier, orgCode, getAppMode());
+    const retryAfter = loginLimiter.consume(key);
+    if (retryAfter > 0) {
+      const response = errorResponse("Terlalu banyak percobaan login. Silakan coba lagi nanti.", "Login dibatasi", 429);
+      response.headers.set("Retry-After", String(retryAfter));
+      return response;
     }
 
     let user;

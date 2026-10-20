@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { VALID_ROLES } from "./utils";
 
 // Wajib: JWT_SECRET harus di-set di environment variables
 if (!process.env.JWT_SECRET) {
@@ -27,6 +28,7 @@ export interface JwtPayload {
  */
 export function signToken(payload: JwtPayload): string {
   return jwt.sign(payload, JWT_SECRET, {
+    algorithm: "HS256",
     expiresIn: JWT_EXPIRES_IN as jwt.SignOptions["expiresIn"],
   });
 }
@@ -37,7 +39,15 @@ export function signToken(payload: JwtPayload): string {
  */
 export function verifyToken(token: string): JwtPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as JwtPayload;
+    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] });
+    if (typeof decoded !== "object" || decoded === null) return null;
+    for (const field of ["userId", "organizationId", "username", "role", "name"] as const) {
+      if (typeof decoded[field] !== "string" || !decoded[field].trim() || /[\r\n]/.test(decoded[field])) {
+        return null;
+      }
+    }
+    if (!(VALID_ROLES as readonly string[]).includes(decoded.role)) return null;
+    return decoded as JwtPayload;
   } catch {
     return null;
   }

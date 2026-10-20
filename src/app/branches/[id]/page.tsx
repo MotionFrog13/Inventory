@@ -1,3 +1,7 @@
+
+import PageHeading from "@/components/PageHeading";
+import GuideCard from "@/components/GuideCard";
+import UiIcon from "@/components/UiIcon";
 import { notFound } from "next/navigation";
 import {
   ASSET_STATUS_LABELS,
@@ -118,13 +122,8 @@ export default async function BranchDetailPage({
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{branch.name}</h1>
-          <p className="text-slate-500 mt-1 flex items-center gap-1.5">
-            <span>📍</span>
-            <span>{branch.location}</span>
-          </p>
-        </div>
+        <PageHeading eyebrow="Inventaris & operasional" title={<>{branch.name}</>} description={<><UiIcon name="pin" size={16} className="inline-block" />
+            <span>{branch.location}</span></>} />
         <Link
           href="/branches"
           className="bg-white border border-slate-200 text-slate-700 font-semibold px-4 py-2 rounded-lg text-sm hover:bg-slate-50 transition shadow-xs"
@@ -132,30 +131,32 @@ export default async function BranchDetailPage({
           ← Kembali
         </Link>
       </div>
+      <GuideCard title="Kenali lokasi inventaris Anda" icon="building">Lihat komposisi stok dan daftar aset pada cabang ini. Gunakan filter untuk menemukan aset, lalu buka detailnya untuk tindak lanjut.</GuideCard>
+
 
       {/* Statistik */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+        <div className="ui-panel bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
           <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Total Stok</p>
           <p className="text-3xl font-bold text-slate-900">{totalStock}</p>
           <p className="text-xs text-slate-400 mt-0.5">pcs · {branch._count.assets} item</p>
         </div>
-        <div className="bg-white border border-green-100 rounded-xl p-4 shadow-xs">
+        <div className="ui-panel bg-white border border-green-100 rounded-xl p-4 shadow-xs">
           <p className="text-xs text-green-600 font-semibold uppercase tracking-wider mb-1">Aktif</p>
           <p className="text-3xl font-bold text-green-700">{activeCount}</p>
           <p className="text-xs text-slate-400 mt-0.5">pcs</p>
         </div>
-        <div className="bg-white border border-red-100 rounded-xl p-4 shadow-xs">
+        <div className="ui-panel bg-white border border-red-100 rounded-xl p-4 shadow-xs">
           <p className="text-xs text-red-600 font-semibold uppercase tracking-wider mb-1">Rusak</p>
           <p className="text-3xl font-bold text-red-700">{brokenCount}</p>
           <p className="text-xs text-slate-400 mt-0.5">pcs</p>
         </div>
-        <div className="bg-white border border-yellow-100 rounded-xl p-4 shadow-xs">
+        <div className="ui-panel bg-white border border-yellow-100 rounded-xl p-4 shadow-xs">
           <p className="text-xs text-yellow-600 font-semibold uppercase tracking-wider mb-1">Perbaikan</p>
           <p className="text-3xl font-bold text-yellow-700">{repairCount}</p>
           <p className="text-xs text-slate-400 mt-0.5">pcs</p>
         </div>
-        <div className="bg-white border border-slate-100 rounded-xl p-4 shadow-xs">
+        <div className="ui-panel bg-white border border-slate-100 rounded-xl p-4 shadow-xs">
           <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Pensiun</p>
           <p className="text-3xl font-bold text-slate-500">{retiredCount}</p>
           <p className="text-xs text-slate-400 mt-0.5">pcs</p>
@@ -165,17 +166,17 @@ export default async function BranchDetailPage({
       {/* Alert: Garansi Akan Habis */}
       {expiringCount > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center gap-3 text-amber-800 text-sm font-medium">
-          <span>⚠️</span>
+          <span><UiIcon name="warning" className="inline-block align-middle" /></span>
           <span>{expiringCount} aset di cabang ini memiliki garansi yang akan habis dalam 30 hari ke depan.</span>
         </div>
       )}
 
       {/* Peta Lokasi Cabang */}
       {branch.mapUrl && (
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs animate-fade-in">
+        <div className="ui-panel bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs animate-fade-in">
           <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
             <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-              <span>📍</span> Peta Lokasi Cabang
+              <span><UiIcon name="pin" className="inline-block align-middle" /></span> Peta Lokasi Cabang
             </h2>
             <a
               href={branch.mapUrl}
@@ -199,7 +200,7 @@ export default async function BranchDetailPage({
       )}
 
       {/* Tabel Aset */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
+      <div className="ui-panel bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
           <h2 className="text-base font-bold text-slate-900">Daftar Aset di Cabang Ini</h2>
           <Link
@@ -232,7 +233,7 @@ export default async function BranchDetailPage({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="inventory-table w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/70">
                   <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3.5">Nama Aset</th>

@@ -3,6 +3,7 @@ import { successResponse, errorResponse } from "@/lib/utils";
 import { assetAccessDenied } from "@/lib/scope";
 import { requireUserScope } from "@/lib/auth";
 import { writeActivityLog } from "@/lib/logger";
+import { isSerializationConflict } from "@/lib/db-errors";
 
 export const dynamic = "force-dynamic";
 
@@ -95,23 +96,38 @@ export async function POST(
     }
 
     // Buat Transfer record dengan status PENDING (aset belum berpindah)
-    const transfer = await db.transfer.create({
-      data: {
-        organizationId: user.organizationId,
-        assetId: id,
-        fromBranchId: asset.branchId,
-        toBranchId,
-        reason,
-        status: "PENDING",
-        requestedById: user.id,
-      },
-      include: {
-        fromBranch: { select: { id: true, name: true } },
-        toBranch: { select: { id: true, name: true } },
-        asset: { select: { id: true, name: true } },
-        requestedBy: { select: { id: true, name: true } },
-      },
-    });
+    const transfer = await db.$transaction(async (tx) => {
+      const currentAsset = await tx.asset.findUnique({
+        where: { id },
+        select: { branchId: true, status: true },
+      });
+      if (!currentAsset || currentAsset.branchId !== asset.branchId ||
+          ["BAP_PENDING", "BAP", "RETIRED"].includes(currentAsset.status)) {
+        throw new Error("TRANSFER_ASSET_CHANGED");
+      }
+      const pending = await tx.transfer.findFirst({
+        where: { assetId: id, status: "PENDING" },
+        select: { id: true },
+      });
+      if (pending) throw new Error("TRANSFER_ALREADY_PENDING");
+      return tx.transfer.create({
+        data: {
+          organizationId: user.organizationId,
+          assetId: id,
+          fromBranchId: asset.branchId,
+          toBranchId,
+          reason,
+          status: "PENDING",
+          requestedById: user.id,
+        },
+        include: {
+          fromBranch: { select: { id: true, name: true } },
+          toBranch: { select: { id: true, name: true } },
+          asset: { select: { id: true, name: true } },
+          requestedBy: { select: { id: true, name: true } },
+        },
+      });
+    }, { isolationLevel: "Serializable" });
 
     await writeActivityLog(
       ctx,
@@ -126,6 +142,12 @@ export async function POST(
       201
     );
   } catch (error) {
+    if (error instanceof Error && error.message === "TRANSFER_ALREADY_PENDING") {
+      return errorResponse("Aset ini sudah memiliki permintaan transfer yang menunggu persetujuan", "Validasi gagal", 400);
+    }
+    if (isSerializationConflict(error) || (error instanceof Error && error.message === "TRANSFER_ASSET_CHANGED")) {
+      return errorResponse("Permintaan transfer atau lokasi aset berubah. Muat ulang sebelum mencoba lagi.", "Konflik perubahan", 409);
+    }
     console.error("Transfer asset error:", error);
     return errorResponse("Terjadi kesalahan server", "Gagal membuat permintaan transfer", 500);
   }

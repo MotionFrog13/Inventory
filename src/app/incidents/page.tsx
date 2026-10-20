@@ -1,4 +1,9 @@
 "use client";
+import UiIcon from "@/components/UiIcon";
+import PageHeading from "@/components/PageHeading";
+import GuideCard from "@/components/GuideCard";
+import Dialog from "@/components/Dialog";
+
 
 export const dynamic = "force-dynamic";
 
@@ -349,7 +354,7 @@ export default function IncidentsPage() {
     if (incident.resolveStatus === "PENDING_REVIEW") {
       return (
         <span className="text-xs font-bold px-2.5 py-1 rounded-full border bg-amber-100 text-amber-700 border-amber-200 whitespace-nowrap animate-pulse">
-          ⏳ Menunggu Acc
+          <UiIcon name="clock" className="inline-block align-middle" /> Menunggu Acc
         </span>
       );
     }
@@ -357,7 +362,7 @@ export default function IncidentsPage() {
       return (
         <div className="flex flex-col gap-0.5">
           <span className="text-xs font-bold px-2.5 py-1 rounded-full border bg-red-100 text-red-700 border-red-200 whitespace-nowrap">
-            ⏳ Aktif
+            <UiIcon name="clock" className="inline-block align-middle" /> Aktif
           </span>
           <span className="text-xs text-red-500 font-medium px-1">↩ Pengajuan ditolak</span>
         </div>
@@ -365,7 +370,7 @@ export default function IncidentsPage() {
     }
     return (
       <span className="text-xs font-bold px-2.5 py-1 rounded-full border bg-red-100 text-red-700 border-red-200 whitespace-nowrap">
-        ⏳ Aktif
+        <UiIcon name="clock" className="inline-block align-middle" /> Aktif
       </span>
     );
   }
@@ -374,10 +379,7 @@ export default function IncidentsPage() {
     <div className="space-y-5 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Daftar Insiden</h1>
-          <p className="text-slate-500 mt-1">{currentSubtitle}</p>
-        </div>
+        <PageHeading eyebrow="Inventaris & operasional" title={<>Daftar Insiden</>} description={<>{currentSubtitle}</>} />
         <button
           onClick={() => {
             setShowCreateModal(true);
@@ -388,12 +390,14 @@ export default function IncidentsPage() {
           }}
           className="bg-red-600 text-white font-semibold px-4 py-2.5 rounded-xl text-sm hover:bg-red-700 transition shadow-sm flex items-center gap-2"
         >
-          🔧 Buat Tiket Baru
+          <UiIcon name="tool" className="inline-block align-middle" /> Buat Tiket Baru
         </button>
       </div>
+      <GuideCard title="Dari laporan hingga selesai" icon="tool">Laporkan aset yang bermasalah, lalu ajukan solusi setelah perbaikan. Pengajuan penyelesaian diperiksa oleh admin divisi atau Super Admin.</GuideCard>
+
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1.5 w-fit shadow-xs flex-wrap">
+      <div className="ui-panel flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1.5 w-fit shadow-xs flex-wrap">
         {([
           { key: "", label: "Semua" },
           { key: "unresolved", label: "Aktif (Unresolved)" },
@@ -431,14 +435,14 @@ export default function IncidentsPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
+      <div className="ui-panel bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="w-8 h-8 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin"></div>
           </div>
         ) : incidents.length === 0 ? (
           <div className="py-16 text-center">
-            <div className="text-5xl mb-3">✅</div>
+            <div className="text-5xl mb-3"><UiIcon size={40} name="check" className="inline-block align-middle" /></div>
             <p className="font-semibold text-slate-700">Tidak ada insiden ditemukan</p>
             <p className="text-xs text-slate-400 mt-1">
               {statusFilter === "unresolved" ? "Semua tiket sudah diselesaikan." :
@@ -448,7 +452,7 @@ export default function IncidentsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
+            <table className="inventory-table w-full text-sm text-left">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
                   <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
@@ -496,7 +500,7 @@ export default function IncidentsPage() {
                         {/* Tampilkan solusi pending untuk Admin */}
                         {isPendingReview && incident.pendingSolution && (
                           <div className="mt-1.5 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
-                            <p className="text-xs font-semibold text-amber-700 mb-0.5">📝 Solusi diajukan oleh {incident.proposedBy}:</p>
+                            <p className="text-xs font-semibold text-amber-700 mb-0.5">Solusi diajukan oleh {incident.proposedBy}:</p>
                             <p className="text-xs text-amber-900">{incident.pendingSolution}</p>
                             {incident.pendingAssetStatus && (
                               <p className="text-xs text-amber-600 mt-0.5">Status diusulkan: <strong>{incident.pendingAssetStatus}</strong></p>
@@ -553,16 +557,17 @@ export default function IncidentsPage() {
                               onClick={() => { setProposeId(incident.id); setProposeForm({ solution: "", assetStatus: "ACTIVE" }); setProposeError(null); }}
                               className="text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition whitespace-nowrap"
                             >
-                              📝 Ajukan Selesai
+                              Ajukan Selesai
                             </button>
                           )}
                           {/* SUPER_ADMIN: tombol hapus */}
                           {isSuperAdmin(userRole) && (
                             <button
                               onClick={() => { setDeleteId(incident.id); setDeleteError(null); }}
+                              aria-label={`Hapus insiden ${incident.asset.name}`}
                               className="text-xs font-semibold text-red-600 hover:text-red-700 px-1.5 py-1 rounded hover:bg-red-50 transition"
                             >
-                              🗑
+                              <UiIcon name="trash" className="inline-block align-middle" />
                             </button>
                           )}
                         </div>
@@ -605,7 +610,7 @@ export default function IncidentsPage() {
           MODAL: Buat Tiket
       ═══════════════════════════════════════════════════════ */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <Dialog label="Buat Tiket Insiden Baru" onClose={() => setShowCreateModal(false)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="p-6">
               <h2 className="text-lg font-bold text-slate-900 mb-1">Buat Tiket Insiden Baru</h2>
@@ -615,8 +620,8 @@ export default function IncidentsPage() {
                   <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{createError}</div>
                 )}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Cari Perangkat <span className="text-red-500">*</span></label>
-                  <input
+                  <label htmlFor="incidents-page-field-1" className="block text-sm font-semibold text-slate-700 mb-1.5">Cari Perangkat <span className="text-red-500">*</span></label>
+                  <input id="incidents-page-field-1"
                     type="text"
                     value={assetSearch}
                     onChange={(e) => setAssetSearch(e.target.value)}
@@ -652,10 +657,10 @@ export default function IncidentsPage() {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                  <label htmlFor="incidents-page-field-2" className="block text-sm font-semibold text-slate-700 mb-1.5">
                     Jumlah Unit yang Rusak (pcs) <span className="text-red-500">*</span>
                   </label>
-                  <input
+                  <input id="incidents-page-field-2"
                     type="number"
                     min={1}
                     max={Math.max(
@@ -674,8 +679,8 @@ export default function IncidentsPage() {
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Deskripsi Masalah / Gejala <span className="text-red-500">*</span></label>
-                  <textarea
+                  <label htmlFor="incidents-page-field-3" className="block text-sm font-semibold text-slate-700 mb-1.5">Deskripsi Masalah / Gejala <span className="text-red-500">*</span></label>
+                  <textarea id="incidents-page-field-3"
                     value={createForm.description}
                     onChange={(e) => setCreateForm((f) => ({ ...f, description: e.target.value }))}
                     required rows={4}
@@ -692,20 +697,20 @@ export default function IncidentsPage() {
                     Batal
                   </button>
                   <button type="submit" disabled={createLoading || !createForm.assetId} className="flex-1 bg-red-600 text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-red-700 transition disabled:opacity-60">
-                    {createLoading ? "Menyimpan..." : "🔧 Buat Tiket"}
+                    {createLoading ? "Menyimpan..." : "Buat Tiket"}
                   </button>
                 </div>
               </form>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
 
       {/* ═══════════════════════════════════════════════════════
           MODAL: Ajukan Selesai (Staf divisi)
       ═══════════════════════════════════════════════════════ */}
       {proposeId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <Dialog label="Ajukan Penyelesaian Insiden" onClose={() => setProposeId(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="p-6">
               <h2 className="text-lg font-bold text-slate-900 mb-1">Ajukan Penyelesaian Insiden</h2>
@@ -715,8 +720,8 @@ export default function IncidentsPage() {
                   <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{proposeError}</div>
                 )}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Solusi / Tindakan yang Dilakukan <span className="text-red-500">*</span></label>
-                  <textarea
+                  <label htmlFor="incidents-page-field-4" className="block text-sm font-semibold text-slate-700 mb-1.5">Solusi / Tindakan yang Dilakukan <span className="text-red-500">*</span></label>
+                  <textarea id="incidents-page-field-4"
                     value={proposeForm.solution}
                     onChange={(e) => setProposeForm((f) => ({ ...f, solution: e.target.value }))}
                     required rows={4}
@@ -725,8 +730,8 @@ export default function IncidentsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Status Perangkat yang Diusulkan</label>
-                  <select
+                  <label htmlFor="incidents-page-field-5" className="block text-sm font-semibold text-slate-700 mb-1.5">Status Perangkat yang Diusulkan</label>
+                  <select id="incidents-page-field-5"
                     value={proposeForm.assetStatus}
                     onChange={(e) => setProposeForm((f) => ({ ...f, assetStatus: e.target.value }))}
                     className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -744,20 +749,20 @@ export default function IncidentsPage() {
                     Batal
                   </button>
                   <button type="submit" disabled={proposeLoading} className="flex-1 bg-indigo-600 text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-indigo-700 transition disabled:opacity-60">
-                    {proposeLoading ? "Mengirim..." : "📝 Kirim Pengajuan"}
+                    {proposeLoading ? "Mengirim..." : "Kirim Pengajuan"}
                   </button>
                 </div>
               </form>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
 
       {/* ═══════════════════════════════════════════════════════
           MODAL: Review Pengajuan (Admin — Acc / Tolak)
       ═══════════════════════════════════════════════════════ */}
       {reviewIncident && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <Dialog label="Review Pengajuan Penyelesaian" onClose={() => setReviewIncident(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="p-6">
               <h2 className="text-lg font-bold text-slate-900 mb-1">Review Pengajuan Penyelesaian</h2>
@@ -817,14 +822,14 @@ export default function IncidentsPage() {
               </div>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
 
       {/* ═══════════════════════════════════════════════════════
           MODAL: Selesaikan Langsung (Admin)
       ═══════════════════════════════════════════════════════ */}
       {resolveId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <Dialog label="Selesaikan Insiden" onClose={() => setResolveId(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="p-6">
               <h2 className="text-lg font-bold text-slate-900 mb-1">Selesaikan Insiden</h2>
@@ -834,8 +839,8 @@ export default function IncidentsPage() {
                   <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{resolveError}</div>
                 )}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Solusi Perbaikan <span className="text-red-500">*</span></label>
-                  <textarea
+                  <label htmlFor="incidents-page-field-6" className="block text-sm font-semibold text-slate-700 mb-1.5">Solusi Perbaikan <span className="text-red-500">*</span></label>
+                  <textarea id="incidents-page-field-6"
                     value={resolveForm.solution}
                     onChange={(e) => setResolveForm((f) => ({ ...f, solution: e.target.value }))}
                     required rows={4}
@@ -844,8 +849,8 @@ export default function IncidentsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Update Status Perangkat</label>
-                  <select
+                  <label htmlFor="incidents-page-field-7" className="block text-sm font-semibold text-slate-700 mb-1.5">Update Status Perangkat</label>
+                  <select id="incidents-page-field-7"
                     value={resolveForm.assetStatus}
                     onChange={(e) => setResolveForm((f) => ({ ...f, assetStatus: e.target.value }))}
                     className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -866,14 +871,14 @@ export default function IncidentsPage() {
               </form>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
 
       {/* ═══════════════════════════════════════════════════════
           MODAL: Hapus Konfirmasi
       ═══════════════════════════════════════════════════════ */}
       {deleteId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <Dialog label="Hapus Insiden?" onClose={() => setDeleteId(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
             <h2 className="text-lg font-bold text-slate-900 mb-2">Hapus Insiden?</h2>
             <p className="text-sm text-slate-600 mb-4">Catatan insiden ini akan dihapus permanen.</p>
@@ -885,11 +890,11 @@ export default function IncidentsPage() {
                 Batal
               </button>
               <button onClick={handleDelete} disabled={deleteLoading} className="flex-1 bg-red-600 text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-red-700 transition disabled:opacity-60">
-                {deleteLoading ? "Menghapus..." : "🗑 Ya, Hapus"}
+                {deleteLoading ? "Menghapus..." : "Ya, Hapus"}
               </button>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );

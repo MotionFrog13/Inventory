@@ -1,4 +1,7 @@
 "use client";
+import GuideCard from "@/components/GuideCard";
+import UiIcon from "@/components/UiIcon";
+
 
 export const dynamic = "force-dynamic";
 
@@ -179,23 +182,24 @@ export default function NewAssetPage() {
           <span>/</span>
           <span className="text-slate-800 font-medium">Tambah Aset Baru</span>
         </div>
-        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+        <h1 className="page-title">
           Tambah Aset {selectedDivision?.name ?? ""}
         </h1>
         <p className="text-slate-500 mt-1">Daftarkan aset baru ke sistem inventaris.</p>
       </div>
 
       {/* Form */}
+      <GuideCard title="Isi informasi aset secara bertahap" icon="box">Kolom bertanda * wajib diisi. Pilih kategori dan lokasi yang sesuai, lalu lengkapi stok dan informasi pendukung. Data garansi dan catatan membantu tim menindaklanjuti aset.</GuideCard>
       <form onSubmit={handleSubmit} className="space-y-6">
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-800 rounded-xl px-4 py-3 text-sm font-medium">
-            ⚠️ {error}
+            <UiIcon name="warning" className="inline-block align-middle" /> {error}
           </div>
         )}
 
         {/* Informasi Dasar */}
-        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-5">
+        <div className="ui-panel bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-5">
           <h2 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3">Informasi Dasar</h2>
 
           {/* Divisi — dipilih SUPER_ADMIN; admin divisi melihat divisinya sebagai label mati */}
@@ -205,7 +209,7 @@ export default function NewAssetPage() {
             </label>
             {isSuperAdmin ? (
               <select
-                name="divisionId"
+                name="divisionId" aria-label="Divisi"
                 value={form.divisionId}
                 onChange={(e) => {
                   // Kategori milik divisi lama tidak berlaku di divisi baru
@@ -222,7 +226,7 @@ export default function NewAssetPage() {
               </select>
             ) : (
               <div className={lockedClass}>
-                <span>🗂️</span>
+                <span><UiIcon name="layers" className="inline-block align-middle" /></span>
                 <span className="truncate">{me?.division?.name ?? "Divisi Anda"}</span>
               </div>
             )}
@@ -230,10 +234,10 @@ export default function NewAssetPage() {
 
           {/* Nama Perangkat */}
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+            <label htmlFor="assets-new-page-field-1" className="block text-sm font-semibold text-slate-700 mb-1.5">
               Nama Aset <span className="text-red-500">*</span>
             </label>
-            <input
+            <input id="assets-new-page-field-1"
               type="text"
               name="name"
               value={form.name}
@@ -247,10 +251,10 @@ export default function NewAssetPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {/* Kategori — mengikuti divisi */}
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+              <label htmlFor="assets-new-page-field-2" className="block text-sm font-semibold text-slate-700 mb-1.5">
                 Kategori <span className="text-red-500">*</span>
               </label>
-              <select
+              <select id="assets-new-page-field-2"
                 name="categoryId"
                 value={form.categoryId}
                 onChange={handleChange}
@@ -273,10 +277,10 @@ export default function NewAssetPage() {
 
             {/* Status — sekaligus menentukan bucket stok awal (src/lib/stock.ts) */}
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+              <label htmlFor="assets-new-page-field-3" className="block text-sm font-semibold text-slate-700 mb-1.5">
                 Kondisi Stok Awal <span className="text-red-500">*</span>
               </label>
-              <select
+              <select id="assets-new-page-field-3"
                 name="status"
                 value={form.status}
                 onChange={handleChange}
@@ -294,8 +298,8 @@ export default function NewAssetPage() {
 
             {/* Brand */}
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Brand / Merk</label>
-              <input
+              <label htmlFor="assets-new-page-field-4" className="block text-sm font-semibold text-slate-700 mb-1.5">Brand / Merk</label>
+              <input id="assets-new-page-field-4"
                 type="text"
                 name="brand"
                 value={form.brand}
@@ -307,8 +311,8 @@ export default function NewAssetPage() {
 
             {/* Model */}
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Model / Seri</label>
-              <input
+              <label htmlFor="assets-new-page-field-5" className="block text-sm font-semibold text-slate-700 mb-1.5">Model / Seri</label>
+              <input id="assets-new-page-field-5"
                 type="text"
                 name="model"
                 value={form.model}
@@ -320,8 +324,8 @@ export default function NewAssetPage() {
 
             {/* Serial Number */}
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Serial Number</label>
-              <input
+              <label htmlFor="assets-new-page-field-6" className="block text-sm font-semibold text-slate-700 mb-1.5">Serial Number</label>
+              <input id="assets-new-page-field-6"
                 type="text"
                 name="serialNumber"
                 value={form.serialNumber}
@@ -340,7 +344,7 @@ export default function NewAssetPage() {
               {lockedBranch ? (
                 <>
                   <div className={lockedClass}>
-                    <span>🏢</span>
+                    <span><UiIcon name="building" className="inline-block align-middle" /></span>
                     <span className="truncate">{lockedBranch.name}</span>
                   </div>
                   <p className="text-xs text-slate-400 mt-1">
@@ -349,7 +353,7 @@ export default function NewAssetPage() {
                 </>
               ) : (
                 <select
-                  name="branchId"
+                  name="branchId" aria-label="Cabang"
                   value={form.branchId}
                   onChange={handleChange}
                   required
@@ -365,10 +369,10 @@ export default function NewAssetPage() {
 
             {/* Stok */}
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+              <label htmlFor="assets-new-page-field-7" className="block text-sm font-semibold text-slate-700 mb-1.5">
                 Stok Awal (pcs) <span className="text-red-500">*</span>
               </label>
-              <input
+              <input id="assets-new-page-field-7"
                 type="number"
                 name="quantity"
                 value={form.quantity}
@@ -385,8 +389,8 @@ export default function NewAssetPage() {
 
           {/* Specs */}
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Spesifikasi</label>
-            <textarea
+            <label htmlFor="assets-new-page-field-8" className="block text-sm font-semibold text-slate-700 mb-1.5">Spesifikasi</label>
+            <textarea id="assets-new-page-field-8"
               name="specs"
               value={form.specs}
               onChange={handleChange}
@@ -398,12 +402,12 @@ export default function NewAssetPage() {
         </div>
 
         {/* Tanggal & Garansi */}
-        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-5">
+        <div className="ui-panel bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-5">
           <h2 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3">Tanggal & Garansi</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Tanggal Pembelian</label>
-              <input
+              <label htmlFor="assets-new-page-field-9" className="block text-sm font-semibold text-slate-700 mb-1.5">Tanggal Pembelian</label>
+              <input id="assets-new-page-field-9"
                 type="date"
                 name="purchaseDate"
                 value={form.purchaseDate}
@@ -412,8 +416,8 @@ export default function NewAssetPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Tanggal Garansi Berakhir</label>
-              <input
+              <label htmlFor="assets-new-page-field-10" className="block text-sm font-semibold text-slate-700 mb-1.5">Tanggal Garansi Berakhir</label>
+              <input id="assets-new-page-field-10"
                 type="date"
                 name="warrantyDate"
                 value={form.warrantyDate}
@@ -425,11 +429,11 @@ export default function NewAssetPage() {
         </div>
 
         {/* Catatan Tambahan */}
-        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-5">
+        <div className="ui-panel bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-5">
           <h2 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3">Catatan Tambahan</h2>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Catatan</label>
-            <textarea
+            <label htmlFor="assets-new-page-field-11" className="block text-sm font-semibold text-slate-700 mb-1.5">Catatan</label>
+            <textarea id="assets-new-page-field-11"
               name="notes"
               value={form.notes}
               onChange={handleChange}
@@ -439,8 +443,8 @@ export default function NewAssetPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">URL Foto Perangkat</label>
-            <input
+            <label htmlFor="assets-new-page-field-12" className="block text-sm font-semibold text-slate-700 mb-1.5">URL Foto Perangkat</label>
+            <input id="assets-new-page-field-12"
               type="url"
               name="photoUrl"
               value={form.photoUrl}

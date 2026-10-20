@@ -1,4 +1,9 @@
 "use client";
+import PageHeading from "@/components/PageHeading";
+import GuideCard from "@/components/GuideCard";
+import UiIcon from "@/components/UiIcon";
+import Dialog from "@/components/Dialog";
+
 
 export const dynamic = "force-dynamic";
 
@@ -139,16 +144,9 @@ export default function DivisionsPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
-            {isSuperAdmin ? "Divisi & Kategori" : `Kategori ${me?.division?.name ?? ""}`}
-          </h1>
-          <p className="text-slate-500 mt-1">
-            {isSuperAdmin
+        <PageHeading eyebrow="Administrasi" title={<>{isSuperAdmin ? "Divisi & Kategori" : `Kategori ${me?.division?.name ?? ""}`}</>} description={<>{isSuperAdmin
               ? "Atur divisi organisasi Anda dan kategori aset di setiap divisi."
-              : "Atur kategori aset di divisi Anda."}
-          </p>
-        </div>
+              : "Atur kategori aset di divisi Anda."}</>} />
         {isSuperAdmin && (
           <button
             onClick={() => open({ kind: "division", division: null })}
@@ -158,17 +156,19 @@ export default function DivisionsPage() {
           </button>
         )}
       </div>
+      <GuideCard title="Susun inventaris agar mudah ditemukan" icon="layers">Kategori mengelompokkan aset di dalam divisi. Buat kategori terlebih dahulu sebelum menambahkan aset baru.</GuideCard>
+
 
       {divisions.length === 0 ? (
-        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs py-16 text-center">
-          <div className="text-5xl mb-3 opacity-60">🗂️</div>
+        <div className="ui-panel bg-white border border-slate-200/80 rounded-2xl shadow-xs py-16 text-center">
+          <div className="text-5xl mb-3 opacity-60"><UiIcon size={40} name="layers" className="inline-block align-middle" /></div>
           <p className="font-semibold text-slate-700">Belum ada divisi</p>
           <p className="text-xs text-slate-400 mt-1">Tambahkan divisi pertama, mis. IT, Kitchen, atau Engineering.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {divisions.map((division) => (
-            <div key={division.id} className="bg-white border border-slate-200/80 rounded-2xl shadow-xs p-5 space-y-4">
+            <div key={division.id} className="ui-panel bg-white border border-slate-200/80 rounded-2xl shadow-xs p-5 space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-bold text-slate-900">{division.name}</h2>
@@ -221,7 +221,7 @@ export default function DivisionsPage() {
       )}
 
       {modal && (
-        <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50">
+        <Dialog label="Konfirmasi tindakan" onClose={() => setModal(null)}>
           <form
             onSubmit={submit}
             className="w-full max-w-md rounded-2xl shadow-xl p-6 space-y-4 border border-white/20"
@@ -236,14 +236,14 @@ export default function DivisionsPage() {
 
             {!isDelete && (
               <div>
-                <label className={labelClass}>Nama</label>
-                <input value={name} onChange={(e) => setName(e.target.value)} required maxLength={60} className={inputClass} autoFocus />
+                <label htmlFor="divisions-page-field-1" className={labelClass}>Nama</label>
+                <input id="divisions-page-field-1" value={name} onChange={(e) => setName(e.target.value)} required maxLength={60} className={inputClass} autoFocus />
               </div>
             )}
             {modal.kind === "division" && (
               <div>
-                <label className={labelClass}>Deskripsi (opsional)</label>
-                <input value={description} onChange={(e) => setDescription(e.target.value)} className={inputClass} />
+                <label htmlFor="divisions-page-field-2" className={labelClass}>Deskripsi (opsional)</label>
+                <input id="divisions-page-field-2" value={description} onChange={(e) => setDescription(e.target.value)} className={inputClass} />
               </div>
             )}
             {isDelete && (
@@ -266,7 +266,7 @@ export default function DivisionsPage() {
               </button>
             </div>
           </form>
-        </div>
+        </Dialog>
       )}
     </div>
   );

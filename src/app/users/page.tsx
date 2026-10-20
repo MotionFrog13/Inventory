@@ -1,4 +1,9 @@
 "use client";
+import UiIcon from "@/components/UiIcon";
+import PageHeading from "@/components/PageHeading";
+import GuideCard from "@/components/GuideCard";
+import Dialog from "@/components/Dialog";
+
 
 export const dynamic = "force-dynamic";
 
@@ -113,8 +118,8 @@ function UserFormFields({
   return (
     <>
       <div>
-        <label className={labelClass}>Nama Lengkap <span className="text-red-500">*</span></label>
-        <input
+        <label htmlFor="users-page-field-1" className={labelClass}>Nama Lengkap <span className="text-red-500">*</span></label>
+        <input id="users-page-field-1"
           type="text"
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -125,8 +130,8 @@ function UserFormFields({
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className={labelClass}>Username <span className="text-red-500">*</span></label>
-          <input
+          <label htmlFor="users-page-field-2" className={labelClass}>Username <span className="text-red-500">*</span></label>
+          <input id="users-page-field-2"
             type="text"
             value={form.username}
             onChange={(e) => setForm((f) => ({ ...f, username: e.target.value.toLowerCase() }))}
@@ -137,10 +142,10 @@ function UserFormFields({
           <p className="text-xs text-slate-400 mt-1">Huruf kecil, angka, titik, _ atau -. Tanpa @.</p>
         </div>
         <div>
-          <label className={labelClass}>
+          <label htmlFor="users-page-field-3" className={labelClass}>
             Email {isSuper ? <span className="text-red-500">*</span> : <span className="text-slate-400 font-normal">(opsional)</span>}
           </label>
-          <input
+          <input id="users-page-field-3"
             type="email"
             value={form.email}
             onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
@@ -151,10 +156,10 @@ function UserFormFields({
         </div>
       </div>
       <div>
-        <label className={labelClass}>
+        <label htmlFor="users-page-field-4" className={labelClass}>
           {isEdit ? <>Password Baru <span className="text-slate-400 font-normal">(Opsional)</span></> : <>Password <span className="text-red-500">*</span></>}
         </label>
-        <input
+        <input id="users-page-field-4"
           type="password"
           value={form.password}
           onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
@@ -165,8 +170,8 @@ function UserFormFields({
         />
       </div>
       <div>
-        <label className={labelClass}>Peran</label>
-        <select
+        <label htmlFor="users-page-field-5" className={labelClass}>Peran</label>
+        <select id="users-page-field-5"
           value={form.role}
           onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
           className={inputClass}
@@ -182,8 +187,8 @@ function UserFormFields({
       {!isSuper && (
         <>
           <div>
-            <label className={labelClass}>Divisi <span className="text-red-500">*</span></label>
-            <select
+            <label htmlFor="users-page-field-6" className={labelClass}>Divisi <span className="text-red-500">*</span></label>
+            <select id="users-page-field-6"
               value={form.divisionId}
               onChange={(e) => setForm((f) => ({ ...f, divisionId: e.target.value }))}
               required
@@ -381,8 +386,8 @@ export default function UsersPage() {
   if (!loading && currentUserRole && currentUserRole !== "SUPER_ADMIN") {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <div className="text-6xl">🔒</div>
-        <h1 className="text-2xl font-bold text-slate-800">Akses Ditolak</h1>
+        <div className="text-6xl"><UiIcon size={40} name="lock" className="inline-block align-middle" /></div>
+        <h1 className="page-title">Akses Ditolak</h1>
         <p className="text-slate-500">Halaman ini hanya dapat diakses oleh Super Admin.</p>
       </div>
     );
@@ -403,10 +408,7 @@ export default function UsersPage() {
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Manajemen Pengguna</h1>
-          <p className="text-slate-500 mt-1 text-sm">Kelola akun, peran, divisi, dan outlet pengguna organisasi Anda.</p>
-        </div>
+        <PageHeading eyebrow="Administrasi" title={<>Manajemen Pengguna</>} description={<>Kelola akun, peran, divisi, dan outlet pengguna organisasi Anda.</>} />
         <button
           id="btn-add-user"
           onClick={() => { setShowAddModal(true); setAddError(null); setAddForm(EMPTY_FORM); }}
@@ -415,25 +417,27 @@ export default function UsersPage() {
           + Tambah Pengguna
         </button>
       </div>
+      <GuideCard title="Pastikan penugasan akun lengkap" icon="users">Admin dan staf divisi memerlukan satu divisi dan minimal satu outlet. Super Admin memiliki akses organisasi dan wajib menggunakan email.</GuideCard>
+
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+        <div className="ui-panel bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
           <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Total Pengguna</p>
           <p className="text-3xl font-bold text-slate-900">{users.length}</p>
         </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+        <div className="ui-panel bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
           <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Admin</p>
           <p className="text-3xl font-bold text-purple-700">{users.filter(u => u.role === "SUPER_ADMIN" || u.role === "DIVISION_ADMIN").length}</p>
         </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+        <div className="ui-panel bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
           <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Staf</p>
           <p className="text-3xl font-bold text-blue-700">{users.filter(u => u.role === "DIVISION_STAFF").length}</p>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
+      <div className="ui-panel bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
         {loading ? (
           <div className="py-16 flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin"></div>
@@ -441,13 +445,13 @@ export default function UsersPage() {
           </div>
         ) : users.length === 0 ? (
           <div className="py-16 text-center">
-            <div className="text-5xl mb-3">👤</div>
+            <div className="text-5xl mb-3"><UiIcon size={40} name="users" className="inline-block align-middle" /></div>
             <p className="font-semibold text-slate-700">Belum ada pengguna</p>
             <p className="text-xs text-slate-400 mt-1">Tambahkan pengguna baru untuk memulai.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="inventory-table w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/70">
                   <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-3.5">Nama</th>
@@ -491,7 +495,7 @@ export default function UsersPage() {
                           </span>
                         ) : unassigned ? (
                           <span className="inline-block whitespace-nowrap text-xs font-semibold px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200/60">
-                            ⚠ Belum ditugaskan
+                            <UiIcon name="warning" className="inline-block align-middle" /> Belum ditugaskan
                           </span>
                         ) : (
                           <div className="flex flex-wrap gap-1">
@@ -533,7 +537,7 @@ export default function UsersPage() {
 
       {/* Modal: Tambah User */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <Dialog label="Tambah Pengguna Baru" onClose={() => setShowAddModal(false)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <h2 className="text-lg font-bold text-slate-900 mb-1">Tambah Pengguna Baru</h2>
@@ -552,12 +556,12 @@ export default function UsersPage() {
               </form>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
 
       {/* Modal: Edit User */}
       {editUser && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <Dialog label="Edit Pengguna" onClose={() => setEditUser(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <h2 className="text-lg font-bold text-slate-900 mb-1">Edit Pengguna</h2>
@@ -576,15 +580,15 @@ export default function UsersPage() {
               </form>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
 
       {/* Modal: Konfirmasi Hapus */}
       {deleteUser && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <Dialog label="Hapus Pengguna?" onClose={() => setDeleteUser(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
             <div className="p-6">
-              <div className="text-4xl mb-3">⚠️</div>
+              <div className="text-4xl mb-3"><UiIcon name="warning" className="inline-block align-middle" /></div>
               <h2 className="text-lg font-bold text-slate-900 mb-1">Hapus Pengguna?</h2>
               <p className="text-sm text-slate-500 mb-4">
                 Akun <strong>{deleteUser.name}</strong> ({deleteUser.username}) akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.
@@ -602,7 +606,7 @@ export default function UsersPage() {
               </div>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );

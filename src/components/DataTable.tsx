@@ -1,4 +1,6 @@
 "use client";
+import UiIcon from "@/components/UiIcon";
+
 
 interface Column<T> {
   key: string;
@@ -36,7 +38,7 @@ export default function DataTable<T extends Record<string, unknown>>({
   if (data.length === 0) {
     return (
       <div className="data-table-empty">
-        <span className="empty-icon">📋</span>
+        <span className="empty-icon"><UiIcon name="document" className="inline-block align-middle" /></span>
         <p>{emptyMessage}</p>
       </div>
     );
@@ -44,7 +46,7 @@ export default function DataTable<T extends Record<string, unknown>>({
 
   return (
     <div className="data-table-wrapper">
-      <table className="data-table">
+      <table className="inventory-table data-table">
         <thead>
           <tr>
             {columns.map((col) => (
