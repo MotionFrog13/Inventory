@@ -4,6 +4,8 @@ Seluruh perubahan dan catatan rilis untuk proyek **Inventory** didokumentasikan 
 
 ## [Unreleased]
 
+- README bahasa Inggris terpisah (`README.en.md`), dengan panduan login pertama, bahasa antarmuka, konfigurasi Docker, backup/pemulihan, serta penanganan masalah.
+
 - Bahasa Inggris menjadi bahasa utama aplikasi; pemilih English/Bahasa Indonesia tersedia pada login dan header, dengan preferensi tersimpan dalam cookie.
 - Navigasi, formulir, status, validasi, dashboard, laporan, serta tampilan tanggal mengikuti bahasa pilihan. Nama dan data yang ditulis pengguna tidak diterjemahkan.
 

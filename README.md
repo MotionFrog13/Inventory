@@ -6,6 +6,8 @@
 
 **Open-source asset & inventory management for organizations with many divisions and outlets.**
 
+[English README](README.en.md) · [Bahasa Indonesia](#ringkasan-bahasa-indonesia)
+
 Track every item by condition, move stock between outlets with approvals, write off assets with a documented report, and handle damage tickets — all scoped per organization, division, and outlet.
 
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-4f46e5.svg)](LICENSE)
@@ -15,7 +17,7 @@ Track every item by condition, move stock between outlets with approvals, write 
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15%2B-4169E1?logo=postgresql&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
 
-[Features](#features) · [Screenshots](#screenshots) · [Quick start](#quick-start) · [Configuration](#configuration) · [Roadmap](#roadmap) · [Ringkasan Bahasa Indonesia](#ringkasan-bahasa-indonesia)
+[Features](#features) · [Screenshots](#screenshots) · [Quick start](#quick-start) · [Languages](#interface-languages) · [Configuration](#configuration) · [Backups](#backups-and-recovery) · [Troubleshooting](#troubleshooting) · [Roadmap](#roadmap)
 
 </div>
 
@@ -28,16 +30,16 @@ Track every item by condition, move stock between outlets with approvals, write 
 
 - **Multi-tenant by design** — every row belongs to an organization. Isolation is enforced twice: a tenant-bound Prisma client injects the organization into every query, and composite foreign keys `(organizationId, …)` make the database itself reject cross-tenant references. Another organization's data simply answers `404`.
 - **Dynamic divisions & categories** — create divisions such as IT, Kitchen, Engineering, or Housekeeping, each with its own asset categories. No hard-coded asset types.
-- **Three role tiers** — Super Admin, Division Admin, and Division Staff. Labels follow the division ("Admin Kitchen", "Staf IT"). Users can be assigned to **several outlets**; accounts without a division or outlet are denied everything (fail closed).
+- **Three role tiers** — Super Admin, Division Admin, and Division Staff. Labels follow the division ("Kitchen Admin", "IT Staff" in English). Division admins and staff can be assigned to **several outlets** and must have both a division and at least one outlet before they can access inventory.
 - **Stock by condition** — one item can hold many pieces split into *active*, *broken*, *in repair*, *retired*, and *reserved* buckets. The item status is derived from the buckets, so 92 working + 8 broken chopsticks still show as active.
-- **Outlet transfers** — request a move to another outlet; only an admin of the **origin** outlet can approve, and the move is applied in a single database transaction.
+- **Outlet transfers** — request a move to another outlet; an admin of the **origin** outlet or a Super Admin can approve, and the move is applied in a single database transaction.
 - **Write-offs with evidence (BAP)** — submit a disposal report with a PDF or photo (images are compressed server-side to WebP). Documents are stored outside the web root and only open for users who can see the asset. Only the submitted pieces are reserved, the rest stays usable; approval removes them for good, rejection returns them to their original bucket.
 - **Incident tickets** — report broken pieces, let staff propose a fix, and let admins approve or resolve directly. The chosen outcome decides where the pieces go (active, repair, retired).
 - **Reports & alerts** — per-division and per-category distribution, monthly incident trends, warranty expiry, and SLA-overdue tickets on the dashboard.
 - **Activity log** — automatic, read-only audit trail visible to the Super Admin of each organization.
 - **Responsive** — works on phones, with an off-canvas navigation drawer.
 - **English & Indonesian** — English on first visit; change language on the login page or header. Your choice persists across pages, refreshes, and sign-ins. Dates follow the selected language and retain the Asia/Jakarta time zone; your own asset and organization data stays unchanged.
-- **Runs anywhere, no server needed** — one Docker container (PostgreSQL included) started with a double-click, for development or production. Publish it from your own computer over HTTPS with the built-in Cloudflare Tunnel — no VPS or cloud hosting.
+- **Self-host on your own computer** — one Docker container (PostgreSQL included) started with a double-click, for development or production. Make it reachable over HTTPS with the built-in Cloudflare Tunnel, without a VPS or router port forwarding.
 
 ## Screenshots
 
@@ -77,9 +79,17 @@ docker compose up -d --build --wait --wait-timeout 600
 docker compose logs app
 ```
 
-Open **http://localhost:8000**. Sign in as **`superadmin`**, using the random password marked **`Password Super Admin pertama`** in the logs. Change it in **Pengguna**, then create your divisions, categories, outlets and users. Production starts with one organization and one admin, with no demo assets. The first build can take several minutes depending on your connection and computer; wait for the container to become healthy.
+Open **http://localhost:8000**. Sign in as **`superadmin`**, using the random password marked **`Password Super Admin pertama`** (first Super Admin password) in the logs. Change it in **Users**, then create your divisions, categories, outlets and users. Production starts with one organization and one admin, with no demo assets. The first build can take several minutes depending on your connection and computer; wait for the container to become healthy.
 
-Subsequent starts keep the same accounts, database, uploads and secrets in the `inventory_data` volume. Do not delete this volume or use `down -v` on a real installation. [Panduan instalasi Bahasa Indonesia](INSTALL.md) · [Docker, backups and HTTPS](docs/docker.md).
+After signing in for the first time:
+
+1. Open **Users** and change the initial admin password.
+2. Open **Divisions & categories**, create your divisions, and add their asset categories.
+3. Open **Outlet** and add your operational locations.
+4. Create accounts in **Users**. Assign each Division Admin or Division Staff member a division and at least one outlet.
+5. Open **Assets** and add your first inventory items.
+
+Subsequent starts keep the same accounts, database, uploads and secrets in the `inventory_data` volume. Do not delete this volume or use `down -v` on a real installation. [Installation guide (Bahasa Indonesia)](INSTALL.md) · [Docker, backups and HTTPS](docs/docker.md).
 
 | Task | Command |
 |---|---|
@@ -103,9 +113,9 @@ PostgreSQL and the app run together in a single container; only Docker is requir
 
 Secrets (JWT, database password) are generated on first start and kept in a Docker volume. See [docs/docker.md](docs/docker.md) (Bahasa Indonesia) for settings, backups, and HTTPS.
 
-**Public access without a server.** Production mode can be published over HTTPS straight from your own computer with Cloudflare Tunnel, built into the container — no VPS, public IP, or router port forwarding. `docker-tunnel.bat` needs no account and gives a temporary address that changes on every restart, which suits trials. For daily use, create a tunnel in Cloudflare Zero Trust for your own domain and put its token in `docker/.env` (`CLOUDFLARE_TUNNEL_TOKEN`); `docker-prod.bat` then starts it automatically. Your computer has to stay on, and the login page becomes reachable from the internet — read [Security notes](#security-notes) first.
+**Public access from your own computer.** Production mode can be published over HTTPS with Cloudflare Tunnel, built into the container, without a VPS, public IP, or router port forwarding. `docker-tunnel.bat` needs no account and gives a temporary address that changes on every restart, which suits trials. For daily use, create a tunnel in Cloudflare Zero Trust for your own domain and put its token in `docker/.env` (`CLOUDFLARE_TUNNEL_TOKEN`); `docker-prod.bat` then starts it automatically. Your computer has to stay on, and the login page becomes reachable from the internet — read [Security notes](#security-notes) first.
 
-### Manual setup
+### Manual setup for development
 
 **Requirements:** Node.js 20.19+, 22.12+ or 24+ · PostgreSQL 15+ (or Docker)
 
@@ -139,6 +149,26 @@ In `saas` mode, enter the organization code **`demo`** together with a username 
 
 All settings live in `.env` (see [`.env.example`](.env.example)). The Docker setup reads `docker/.env` instead and generates its own secrets — see [`docker/.env.example`](docker/.env.example) and [docs/docker.md](docs/docker.md).
 
+### Docker settings
+
+These settings are optional. Copy `docker/.env.example` to `docker/.env` before changing them.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `PROD_PORT` | `8000` | Port used to open the production app on your computer |
+| `PROD_APP_MODE` | `self-hosted` | Production login and organization mode |
+| `ORG_NAME` / `ORG_SLUG` | `Organisasi Saya` / `main` | Initial organization name and code |
+| `ADMIN_NAME` / `ADMIN_USERNAME` | `Super Administrator` / `superadmin` | Initial admin name and username |
+| `ADMIN_EMAIL` | `admin@inventory.local` | Initial admin email; set this to your own address |
+| `ADMIN_PASSWORD` | generated randomly | Initial admin password; at least 8 characters if supplied |
+| `DEV_PORT` / `DEV_DB_PORT` | `3000` / `55432` | Development app and local database ports |
+| `DEV_APP_MODE` | `self-hosted` | Set to `saas` when running the HTTP QA suites |
+| `CLOUDFLARE_TUNNEL_TOKEN` | empty | Optional token for a tunnel with your own domain |
+
+Organization and admin bootstrap settings apply only to an empty database. Changing them later does not reset an existing account or rename its organization. The default organization name, `Organisasi Saya`, means "My Organization"; choose a name before first start with `ORG_NAME`.
+
+### Manual installation settings
+
 | Variable | Required | Description |
 |---|---|---|
 | `DATABASE_URL` | yes | PostgreSQL connection string |
@@ -155,6 +185,69 @@ All settings live in `.env` (see [`.env.example`](.env.example)). The Docker set
 | Organizations | exactly one — login is refused (`503`) if the database holds more or fewer | many |
 | Login | username or email + password | email + password, **or** organization code + username + password |
 | Extras | — | `/login?org=demo` pre-fills the organization code |
+
+## Interface languages
+
+**English is the default.** Choose **English** or **Bahasa Indonesia** using the language selector on the sign-in page or application header. The preference persists across navigation, page refreshes, and sign-ins.
+
+Navigation, forms, status labels, validation messages, reports, and dates follow the selected language. Dates use the **Asia/Jakarta** time zone in both languages. Names, notes, descriptions, and other data entered by your team remain as written.
+
+Translation contributors can find the dictionary and implementation guide in [docs/localization.md](docs/localization.md). Some existing screenshots show the Indonesian interface.
+
+## Backups and recovery
+
+Production data lives in the Docker volume **`inventory_data`**: PostgreSQL data, uploaded write-off documents, and generated secrets. Rebuilding or recreating the container keeps this volume. Back up before updating the application.
+
+From the project folder, save a SQL dump and a copy of the uploaded documents:
+
+```bash
+docker compose exec -T app gosu postgres pg_dump inventory > backup-inventory.sql
+docker compose cp app:/data/uploads ./backup-uploads
+```
+
+Use Bash or Command Prompt for the SQL redirection above. If you normally use PowerShell, run the dump command in Command Prompt to avoid encoding differences. Store backups privately because they contain organization data and password hashes.
+
+Restore onto a separate installation with an empty database, using the same application version as the backup. Keep the original installation available until you verify the restored accounts and documents.
+
+<details>
+<summary>Restore a backup to a replacement installation</summary>
+
+Start the replacement installation first, and keep it unavailable to other users while restoring. Copy the backup files into its project folder, then run these commands there. **The SQL command replaces the destination database's contents.**
+
+```bash
+docker compose cp ./backup-inventory.sql app:/tmp/restore.sql
+docker compose exec -T app gosu postgres psql -d inventory -v ON_ERROR_STOP=1 -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;" -f /tmp/restore.sql
+docker compose cp ./backup-uploads/. app:/data/uploads/
+docker compose exec -T app chown -R node:node /data/uploads
+docker compose restart app
+```
+
+Sign in with an account from the backup, verify inventory and write-off documents, then remove the temporary SQL file:
+
+```bash
+docker compose exec -T app rm /tmp/restore.sql
+```
+
+Newly generated JWT secrets require users to sign in again. The restored password hashes keep the original account passwords. More operational details are available in [the Docker guide](docs/docker.md#7-data--backup) (Bahasa Indonesia).
+
+</details>
+
+**Do not use `docker compose down -v` on a real installation:** it removes the persistent volume. Normal `docker compose down` stops the application while retaining data.
+
+## Troubleshooting
+
+| Problem | What to check |
+|---|---|
+| Docker is unavailable | Start Docker Desktop and wait for the engine to be ready. On Linux, check that Docker Engine and Compose are installed and running. |
+| Compose rejects `include` | Upgrade to Compose 2.20+ or use `docker-prod.bat` / `bash docker/launch.sh prod`, which selects the production configuration directly. |
+| Port 8000 is already in use | Set `PROD_PORT=8001` in `docker/.env`, start again, and open `http://localhost:8001`. |
+| The first build is slow or a download fails | Check access to the Docker and npm registries, then retry. Fonts are bundled locally. |
+| The application does not become healthy | Run `docker compose ps` and `docker compose logs --tail 100 app`. Keep the data volume while investigating. |
+| The initial admin password was missed | Check `docker compose logs app` before recreating the container. The password is printed only during initial bootstrap. |
+| Changing `ADMIN_PASSWORD` has no effect | It only configures the first admin on an empty database. Change an existing account's password through **Users**. |
+| Login fails using a LAN IP address | Production sessions use Secure cookies. Use HTTPS for other devices; use `http://localhost:8000` on the host computer. |
+| A division user cannot access inventory | Assign both a division and at least one outlet in **Users**. |
+| An older installation's data is missing | The separate developer database uses `docker/compose.db.yml`; production uses a different volume. Plan a backup and migration before switching setups. |
 
 ## Roles
 
