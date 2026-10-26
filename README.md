@@ -22,7 +22,7 @@ Track every item by condition, move stock between outlets with approvals, write 
 ![Dashboard](docs/screenshots/dashboard.png)
 
 > [!NOTE]
-> **Project status: early but working.** The core (multi-tenant isolation, roles, stock, transfers, write-offs, incidents) is implemented and covered by automated tests. It is ready for **self-hosted, single-organization** use. The user interface is currently in **Bahasa Indonesia**; translations are on the [roadmap](#roadmap). Please read [Security notes](#security-notes) before exposing an instance to the internet.
+> **Project status: early but working.** The core (multi-tenant isolation, roles, stock, transfers, write-offs, incidents) is implemented and covered by automated tests. It is ready for **self-hosted, single-organization** use. **English is the default interface language**, with **Bahasa Indonesia** available from the language selector on the login page and application header. Please read [Security notes](#security-notes) before exposing an instance to the internet.
 
 ## Features
 
@@ -36,6 +36,7 @@ Track every item by condition, move stock between outlets with approvals, write 
 - **Reports & alerts** — per-division and per-category distribution, monthly incident trends, warranty expiry, and SLA-overdue tickets on the dashboard.
 - **Activity log** — automatic, read-only audit trail visible to the Super Admin of each organization.
 - **Responsive** — works on phones, with an off-canvas navigation drawer.
+- **English & Indonesian** — English on first visit; change language on the login page or header. Your choice persists across pages, refreshes, and sign-ins. Dates follow the selected language and retain the Asia/Jakarta time zone; your own asset and organization data stays unchanged.
 - **Runs anywhere, no server needed** — one Docker container (PostgreSQL included) started with a double-click, for development or production. Publish it from your own computer over HTTPS with the built-in Cloudflare Tunnel — no VPS or cloud hosting.
 
 ## Screenshots
@@ -206,7 +207,7 @@ Known limitations of the current release — see [SECURITY.md](SECURITY.md) for 
 
 1. ✅ **Foundation** — organizations, dynamic divisions & categories, three role tiers, multi-outlet users, tenant-bound database client.
 2. **Cross-division repair tickets** — route a category's tickets to a handling division (e.g. Engineering), assign technicians, track progress and SLA.
-3. **Open-source readiness** — ✅ automatic production bootstrap and login rate limiting; setup wizard, configurable name/logo/time zone, English & Indonesian UI still planned.
+3. **Open-source readiness** — ✅ automatic production bootstrap, login rate limiting, and English & Indonesian UI; setup wizard and configurable name/logo/time zone still planned.
 4. **Distribution** — ✅ single-container Docker installation, CI, clean-install testing, backup guide and built-in Cloudflare Tunnel ([docs/docker.md](docs/docker.md)); a published image is still planned.
 5. **SaaS** — public sign-up, email verification & password reset, quotas, platform admin.
 
@@ -230,7 +231,7 @@ Inventory is free software, licensed under the [GNU Affero General Public Licens
 
 ## Ringkasan Bahasa Indonesia
 
-**Inventory** adalah aplikasi open source untuk mengelola aset dan inventaris di organisasi yang memiliki banyak divisi dan outlet. Antarmukanya sudah berbahasa Indonesia.
+**Inventory** adalah aplikasi open source untuk mengelola aset dan inventaris di organisasi yang memiliki banyak divisi dan outlet. Bahasa Inggris menjadi bahasa utama; Bahasa Indonesia tetap tersedia lewat pemilih bahasa di halaman login dan header aplikasi.
 
 **Fitur utama:**
 - **Multi-tenant**: satu instalasi untuk satu organisasi (`self-hosted`) atau banyak organisasi (`saas`, masih eksperimental). Data antar-organisasi terisolasi ketat.

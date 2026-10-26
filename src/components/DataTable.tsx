@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/components/LanguageProvider";
 import UiIcon from "@/components/UiIcon";
 
 
@@ -26,11 +27,12 @@ export default function DataTable<T extends Record<string, unknown>>({
   onRowClick,
   loading = false,
 }: DataTableProps<T>) {
+  const { t } = useI18n();
   if (loading) {
     return (
       <div className="data-table-loading">
         <div className="spinner" />
-        <p>Memuat data...</p>
+        <p>{t("Memuat data...")}</p>
       </div>
     );
   }
@@ -39,7 +41,7 @@ export default function DataTable<T extends Record<string, unknown>>({
     return (
       <div className="data-table-empty">
         <span className="empty-icon"><UiIcon name="document" className="inline-block align-middle" /></span>
-        <p>{emptyMessage}</p>
+        <p>{t(emptyMessage)}</p>
       </div>
     );
   }
@@ -51,7 +53,7 @@ export default function DataTable<T extends Record<string, unknown>>({
           <tr>
             {columns.map((col) => (
               <th key={col.key} className={col.className}>
-                {col.label}
+                {t(col.label)}
               </th>
             ))}
           </tr>

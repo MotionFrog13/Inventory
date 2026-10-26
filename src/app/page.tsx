@@ -1,3 +1,4 @@
+import { getI18n } from "@/lib/i18n/server";
 import QuickStart from "@/components/QuickStart";
 
 import PageHeading from "@/components/PageHeading";
@@ -20,6 +21,7 @@ export const dynamic = "force-dynamic";
 
 // Server Component default untuk fetching data
 export default async function DashboardPage() {
+  const { t, locale } = await getI18n();
   const now = new Date();
   const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -32,7 +34,7 @@ export default async function DashboardPage() {
       <AccessDenied
         message={UNASSIGNED_MESSAGE}
         backHref="/login"
-        backLabel="Kembali ke Halaman Masuk"
+        backLabel={t("Kembali ke Halaman Masuk")}
       />
     );
   }
@@ -157,10 +159,10 @@ export default async function DashboardPage() {
 
   // Label cakupan: divisi pengguna (atau "Semua Divisi") dan wilayah outletnya,
   // agar angka pada kartu tidak salah dibaca sebagai angka seluruh organisasi.
-  const divisionLabel = divisionScopeLabel(user);
-  const dashboardSubtitle = `Status real-time operasional aset ${divisionLabel} di ${branchScopeLabel(user)}.`;
+  const divisionLabel = divisionScopeLabel(user, locale);
+  const dashboardSubtitle = t("Status real-time operasional aset {0} di {1}.", [divisionLabel, branchScopeLabel(user, locale)]);
   const branchBadge = isSuperAdmin
-    ? "Semua Outlet"
+    ? t("Semua Outlet")
     : user.branches.map((b) => b.name).join(", ");
 
   // Divisi tanpa aset tetap tampil (angka nol) agar Super Admin melihat
@@ -182,7 +184,7 @@ export default async function DashboardPage() {
 
       {/* Welcome & Title */}
       <div className="flex items-start justify-between flex-wrap gap-3">
-        <PageHeading eyebrow="Ruang kerja" title={<>Ringkasan inventaris</>} description={<>{dashboardSubtitle}</>} />
+        <PageHeading eyebrow={t("Ruang kerja")} title={<>{t("Ringkasan inventaris")}</>} description={<>{dashboardSubtitle}</>} />
         {/* Badge divisi + outlet aktif */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${
@@ -190,16 +192,14 @@ export default async function DashboardPage() {
               ? "bg-purple-50 text-purple-700 border-purple-200"
               : "bg-indigo-50 text-indigo-700 border-indigo-200"
           }`}>
-            <span><UiIcon name="layers" className="inline-block align-middle" /></span>
-            Divisi: {divisionLabel}
+            <span><UiIcon name="layers" className="inline-block align-middle" /></span>{t("Divisi:")}{" "}{divisionLabel}
           </span>
           <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${
             isSuperAdmin
               ? "bg-purple-50 text-purple-700 border-purple-200"
               : "bg-emerald-50 text-emerald-700 border-emerald-200/60"
           }`}>
-            <span><UiIcon name="building" className="inline-block align-middle" /></span>
-            Outlet: {branchBadge}
+            <span><UiIcon name="building" className="inline-block align-middle" /></span>{t("Outlet:")}{" "}{branchBadge}
           </span>
         </div>
       </div>
@@ -213,15 +213,15 @@ export default async function DashboardPage() {
         <div className="ui-panel bg-white border border-slate-200 rounded-xl p-5 shadow-xs relative overflow-hidden transition hover:shadow-md">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Item {divisionLabel}</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("Total Item")}{" "}{divisionLabel}</p>
               <h3 className="text-3xl font-extrabold text-slate-900 mt-2">{totalAssets}</h3>
             </div>
             <span className="text-2xl p-2 bg-indigo-50 rounded-lg"><UiIcon name="box" className="inline-block align-middle" /></span>
           </div>
           <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
-            <span>Aktif: <strong className="text-green-600 font-semibold">{activeAssets}</strong> pcs</span>
-            <span>Perbaikan: <strong className="text-amber-500 font-semibold">{repairAssets}</strong> pcs</span>
-            <span>Tidak digunakan: <strong>{retiredAssets}</strong> pcs</span>
+            <span>{t("Aktif:")}{" "}<strong className="text-green-600 font-semibold">{activeAssets}</strong> pcs</span>
+            <span>{t("Perbaikan:")}{" "}<strong className="text-amber-500 font-semibold">{repairAssets}</strong> pcs</span>
+            <span>{t("Tidak digunakan:")}{" "}<strong>{retiredAssets}</strong> pcs</span>
           </div>
         </div>
 
@@ -229,7 +229,7 @@ export default async function DashboardPage() {
         <div className="ui-panel bg-white border border-slate-200 rounded-xl p-5 shadow-xs relative overflow-hidden transition hover:shadow-md">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Stok rusak</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("Stok rusak")}</p>
               <h3 className="text-3xl font-extrabold text-slate-900 mt-2">
                 {brokenAssets}
                 <span className="text-base font-semibold text-slate-400 ml-1.5">pcs</span>
@@ -239,7 +239,7 @@ export default async function DashboardPage() {
           </div>
           <div className="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-            <span>Menunggu penanganan &amp; perbaikan</span>
+            <span>{t("Menunggu penanganan &amp; perbaikan")}</span>
           </div>
         </div>
 
@@ -248,7 +248,7 @@ export default async function DashboardPage() {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                {isSuperAdmin ? "Total Cabang" : "Outlet Anda"}
+                {isSuperAdmin ? t("Total Cabang") : t("Outlet Anda")}
               </p>
               {/* Pengguna ber-outlet tunggal melihat NAMA outletnya, bukan angka
                   "1" yang tidak memberi informasi apa pun */}
@@ -263,8 +263,8 @@ export default async function DashboardPage() {
           <div className="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500">
             <span>
               {isSuperAdmin
-                ? "Tersebar di seluruh area operasional"
-                : "Seluruh angka di halaman ini hanya mencakup outlet Anda"}
+                ? t("Tersebar di seluruh area operasional")
+                : t("Seluruh angka di halaman ini hanya mencakup outlet Anda")}
             </span>
           </div>
         </div>
@@ -273,14 +273,14 @@ export default async function DashboardPage() {
         <div className="ui-panel bg-white border border-slate-200 rounded-xl p-5 shadow-xs relative overflow-hidden transition hover:shadow-md">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tiket Insiden Aktif</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("Tiket Insiden Aktif")}</p>
               <h3 className="text-3xl font-extrabold text-slate-900 mt-2">{unresolvedIncidents}</h3>
             </div>
             <span className="text-2xl p-2 bg-amber-50 rounded-lg"><UiIcon name="tool" className="inline-block align-middle" /></span>
           </div>
           <div className="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 flex flex-wrap gap-2 items-center justify-between">
-            <span>Belum selesai diperbaiki</span>
-            <Link href="/incidents" className="text-indigo-600 font-semibold hover:underline">Lihat Semua →</Link>
+            <span>{t("Belum selesai diperbaiki")}</span>
+            <Link href="/incidents" className="text-indigo-600 font-semibold hover:underline">{t("Lihat Semua →")}</Link>
           </div>
         </div>
 
@@ -291,20 +291,18 @@ export default async function DashboardPage() {
       {isSuperAdmin && divisionRows.length > 0 && (
         <div className="ui-panel bg-white border border-slate-200/80 rounded-xl p-5 shadow-xs">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold text-slate-900">Ringkasan per Divisi</h2>
-            <Link href="/divisions" className="text-xs font-semibold text-indigo-600 hover:underline">
-              Kelola Divisi →
-            </Link>
+            <h2 className="text-lg font-bold text-slate-900">{t("Ringkasan per Divisi")}</h2>
+            <Link href="/divisions" className="text-xs font-semibold text-indigo-600 hover:underline">{t("Kelola Divisi →")}</Link>
           </div>
           <div className="overflow-x-auto">
             <table className="inventory-table w-full text-left text-sm">
               <thead>
                 <tr className="text-xs text-slate-500 uppercase tracking-wider border-b border-slate-100">
-                  <th className="py-2 font-semibold">Divisi</th>
+                  <th className="py-2 font-semibold">{t("Divisi")}</th>
                   <th className="py-2 font-semibold text-right">Item</th>
-                  <th className="py-2 font-semibold text-right">Aktif (pcs)</th>
-                  <th className="py-2 font-semibold text-right">Rusak (pcs)</th>
-                  <th className="py-2 font-semibold text-right">Perbaikan (pcs)</th>
+                  <th className="py-2 font-semibold text-right">{t("Aktif (pcs)")}</th>
+                  <th className="py-2 font-semibold text-right">{t("Rusak (pcs)")}</th>
+                  <th className="py-2 font-semibold text-right">{t("Perbaikan (pcs)")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -332,13 +330,11 @@ export default async function DashboardPage() {
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div className="flex items-center gap-2">
             <span className="text-xl"><UiIcon name="warning" className="inline-block align-middle" /></span>
-            <h2 className="text-lg font-bold text-slate-900">
-              Perlu perhatian · {divisionLabel}
+            <h2 className="text-lg font-bold text-slate-900">{t("Perlu perhatian ·")}{" "}{divisionLabel}
             </h2>
           </div>
           {!hasAlerts && (
-            <span className="text-xs bg-green-50 text-green-700 font-semibold px-2.5 py-1 rounded-full border border-green-200">
-              Sistem Normal <UiIcon name="check" className="inline-block align-middle" />
+            <span className="text-xs bg-green-50 text-green-700 font-semibold px-2.5 py-1 rounded-full border border-green-200">{t("Sistem Normal")}{" "}<UiIcon name="check" className="inline-block align-middle" />
             </span>
           )}
         </div>
@@ -347,8 +343,8 @@ export default async function DashboardPage() {
         {!hasAlerts && (
           <div className="py-8 text-center text-slate-500">
             <div className="text-4xl mb-2">🎉</div>
-            <p className="font-semibold text-slate-700">Semua aman &amp; terkendali!</p>
-            <p className="text-xs text-slate-400 mt-1">Tidak ada isu garansi, insiden yang melewati 7 hari, atau perangkat rusak tanpa tiket insiden saat ini.</p>
+            <p className="font-semibold text-slate-700">{t("Semua aman &amp; terkendali!")}</p>
+            <p className="text-xs text-slate-400 mt-1">{t("Tidak ada isu garansi, insiden yang melewati 7 hari, atau perangkat rusak tanpa tiket insiden saat ini.")}</p>
           </div>
         )}
 
@@ -358,19 +354,19 @@ export default async function DashboardPage() {
             <div className="bg-red-50 border-b border-red-200 px-4 py-3 flex items-center gap-2.5">
               <span className="text-red-600 text-lg"><UiIcon name="warning" className="inline-block align-middle" /></span>
               <div>
-                <h3 className="font-bold text-red-900 text-sm">Aset rusak tanpa tiket ({brokenAssetsPending.length} Perangkat)</h3>
-                <p className="text-xs text-red-700">Aset berstatus RUSAK (BROKEN) namun belum terdaftar di tiket insiden manapun.</p>
+                <h3 className="font-bold text-red-900 text-sm">{t("Aset rusak tanpa tiket (")}{brokenAssetsPending.length}{" "}{t("Perangkat)")}</h3>
+                <p className="text-xs text-red-700">{t("Aset berstatus RUSAK (BROKEN) namun belum terdaftar di tiket insiden manapun.")}</p>
               </div>
             </div>
             <div className="p-4 overflow-x-auto">
               <table className="inventory-table w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="text-slate-500 border-b border-red-100">
-                    <th className="pb-2 font-semibold uppercase tracking-wider">Nama Perangkat</th>
-                    <th className="pb-2 font-semibold uppercase tracking-wider">Kategori</th>
-                    <th className="pb-2 font-semibold uppercase tracking-wider">Cabang</th>
+                    <th className="pb-2 font-semibold uppercase tracking-wider">{t("Nama Perangkat")}</th>
+                    <th className="pb-2 font-semibold uppercase tracking-wider">{t("Kategori")}</th>
+                    <th className="pb-2 font-semibold uppercase tracking-wider">{t("Cabang")}</th>
                     <th className="pb-2 font-semibold uppercase tracking-wider">Serial Number</th>
-                    <th className="pb-2 font-semibold uppercase tracking-wider text-right">Aksi</th>
+                    <th className="pb-2 font-semibold uppercase tracking-wider text-right">{t("Aksi")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-red-50">
@@ -389,8 +385,7 @@ export default async function DashboardPage() {
                           href={`/incidents?createAssetId=${asset.id}`}
                           className="inline-block bg-red-600 text-white font-semibold px-3 py-1 rounded-md text-xs hover:bg-red-700 transition"
                         >
-                          <UiIcon name="tool" className="inline-block align-middle" /> Buat Tiket
-                        </Link>
+                          <UiIcon name="tool" className="inline-block align-middle" />{" "}{t("Buat Tiket")}</Link>
                       </td>
                     </tr>
                   ))}
@@ -406,19 +401,19 @@ export default async function DashboardPage() {
             <div className="bg-amber-50 border-b border-amber-200 px-4 py-3 flex items-center gap-2.5">
               <span className="text-amber-600 text-lg"><UiIcon name="tool" className="inline-block align-middle" /></span>
               <div>
-                <h3 className="font-bold text-amber-900 text-sm">Insiden lebih dari 7 hari ({slaOverdueIncidents.length} Tiket)</h3>
-                <p className="text-xs text-amber-700">Tiket insiden aktif yang sudah berjalan lebih dari 7 hari namun belum selesai diperbaiki (resolved).</p>
+                <h3 className="font-bold text-amber-900 text-sm">{t("Insiden lebih dari 7 hari (")}{slaOverdueIncidents.length}{" "}{t("Tiket)")}</h3>
+                <p className="text-xs text-amber-700">{t("Tiket insiden aktif yang sudah berjalan lebih dari 7 hari namun belum selesai diperbaiki (resolved).")}</p>
               </div>
             </div>
             <div className="p-4 overflow-x-auto">
               <table className="inventory-table w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="text-slate-500 border-b border-amber-100">
-                    <th className="pb-2 font-semibold uppercase tracking-wider">Perangkat</th>
-                    <th className="pb-2 font-semibold uppercase tracking-wider">Cabang</th>
-                    <th className="pb-2 font-semibold uppercase tracking-wider">Keluhan Kerusakan</th>
-                    <th className="pb-2 font-semibold uppercase tracking-wider">Tanggal Lapor</th>
-                    <th className="pb-2 font-semibold uppercase tracking-wider">Durasi Aktif</th>
+                    <th className="pb-2 font-semibold uppercase tracking-wider">{t("Perangkat")}</th>
+                    <th className="pb-2 font-semibold uppercase tracking-wider">{t("Cabang")}</th>
+                    <th className="pb-2 font-semibold uppercase tracking-wider">{t("Keluhan Kerusakan")}</th>
+                    <th className="pb-2 font-semibold uppercase tracking-wider">{t("Tanggal Lapor")}</th>
+                    <th className="pb-2 font-semibold uppercase tracking-wider">{t("Durasi Aktif")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-amber-50">
@@ -433,11 +428,10 @@ export default async function DashboardPage() {
                         </td>
                         <td className="py-2.5">{incident.asset.branch.name}</td>
                         <td className="py-2.5 truncate max-w-xs">{incident.description}</td>
-                        <td className="py-2.5">{formatDate(incident.reportedAt)}</td>
+                        <td className="py-2.5">{formatDate(incident.reportedAt, locale)}</td>
                         <td className="py-2.5">
                           <span className="bg-amber-100 text-amber-950 font-bold px-2 py-0.5 rounded-full border border-amber-300">
-                            {daysActive} Hari
-                          </span>
+                            {daysActive}{" "}{t("Hari")}</span>
                         </td>
                       </tr>
                     );
@@ -454,19 +448,19 @@ export default async function DashboardPage() {
             <div className="bg-slate-50 border-b border-slate-200 px-4 py-3 flex items-center gap-2.5">
               <span className="text-slate-600 text-lg"><UiIcon name="warning" className="inline-block align-middle" /></span>
               <div>
-                <h3 className="font-bold text-slate-900 text-sm">Garansi perlu diperiksa ({expiringAssets.length} Aset)</h3>
-                <p className="text-xs text-slate-500">Aset dengan masa garansi habis dalam ≤ 30 hari ke depan (termasuk yang sudah habis).</p>
+                <h3 className="font-bold text-slate-900 text-sm">{t("Garansi perlu diperiksa (")}{expiringAssets.length}{" "}{t("Aset)")}</h3>
+                <p className="text-xs text-slate-500">{t("Aset dengan masa garansi habis dalam ≤ 30 hari ke depan (termasuk yang sudah habis).")}</p>
               </div>
             </div>
             <div className="p-4 overflow-x-auto">
               <table className="inventory-table w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="text-slate-500 border-b border-slate-100">
-                    <th className="pb-2 font-semibold uppercase tracking-wider">Nama Perangkat</th>
-                    <th className="pb-2 font-semibold uppercase tracking-wider">Cabang</th>
-                    <th className="pb-2 font-semibold uppercase tracking-wider">Status Aset</th>
-                    <th className="pb-2 font-semibold uppercase tracking-wider">Batas Garansi</th>
-                    <th className="pb-2 font-semibold uppercase tracking-wider">Sisa Hari</th>
+                    <th className="pb-2 font-semibold uppercase tracking-wider">{t("Nama Perangkat")}</th>
+                    <th className="pb-2 font-semibold uppercase tracking-wider">{t("Cabang")}</th>
+                    <th className="pb-2 font-semibold uppercase tracking-wider">{t("Status Aset")}</th>
+                    <th className="pb-2 font-semibold uppercase tracking-wider">{t("Batas Garansi")}</th>
+                    <th className="pb-2 font-semibold uppercase tracking-wider">{t("Sisa Hari")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -477,11 +471,11 @@ export default async function DashboardPage() {
                     // Skala pastel sesuai panduan warna (CLAUDE.md §7.A):
                     // aman → emerald, mendekati habis → amber, kadaluarsa → rose
                     let bgClass = "bg-emerald-50 text-emerald-700 border-emerald-200/60";
-                    let label = `${daysRemaining} Hari`;
+                    let label = t("{0} Hari", [daysRemaining]);
 
                     if (isExpired) {
                       bgClass = "bg-rose-50 text-rose-700 border-rose-200/60";
-                      label = `Expired (${Math.abs(daysRemaining || 0)} hari lalu)`;
+                      label = t("Expired ({0} hari lalu)", [Math.abs(daysRemaining || 0)]);
                     } else if (daysRemaining !== null && daysRemaining <= 30) {
                       bgClass = "bg-amber-50 text-amber-700 border-amber-200/60";
                     }
@@ -496,10 +490,10 @@ export default async function DashboardPage() {
                         <td className="py-2.5">{asset.branch.name}</td>
                         <td className="py-2.5">
                           <span className={`status-badge status-badge-sm ${ASSET_STATUS_COLORS[asset.status] || STATUS_COLOR_FALLBACK}`}>
-                            {ASSET_STATUS_LABELS[asset.status] || asset.status}
+                            {t(ASSET_STATUS_LABELS[asset.status] || asset.status)}
                           </span>
                         </td>
-                        <td className="py-2.5 font-semibold">{formatDate(asset.warrantyDate)}</td>
+                        <td className="py-2.5 font-semibold">{formatDate(asset.warrantyDate, locale)}</td>
                         <td className="py-2.5">
                           <span className={`inline-block text-xs font-bold px-2 py-0.5 rounded-md border ${bgClass}`}>
                             {label}

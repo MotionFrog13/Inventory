@@ -6,7 +6,7 @@ Thanks for your interest in improving Inventory! Bug reports, documentation fixe
 
 - For anything larger than a small fix, please **open an issue first** so we can agree on the approach.
 - Security problems must **not** be reported in public issues — see [SECURITY.md](SECURITY.md).
-- The user interface is currently in Bahasa Indonesia. Keep new UI text consistent with it until translations land (see the roadmap in the [README](README.md#roadmap)).
+- English is the default UI language, with Bahasa Indonesia available as a user preference. Add both translations for new interface copy and use the shared translator; see [docs/localization.md](docs/localization.md). Keep names and descriptions entered by users unchanged.
 
 ## Development setup
 

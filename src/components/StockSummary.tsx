@@ -1,3 +1,5 @@
+"use client";
+import { useI18n } from "@/components/LanguageProvider";
 
 import UiIcon from "@/components/UiIcon";
 import { AssetStock } from "@/lib/stock";
@@ -62,6 +64,7 @@ function segmentsOf(stock: AssetStock): Segment[] {
 }
 
 export default function StockSummary({ stock }: { stock: AssetStock }) {
+  const { t } = useI18n();
   const segments = segmentsOf(stock);
   const total = Math.max(stock.quantity, 1);
   // Bucket kosong disembunyikan agar kartu tidak penuh angka nol untuk aset
@@ -72,18 +75,14 @@ export default function StockSummary({ stock }: { stock: AssetStock }) {
     <div className="ui-panel bg-white border border-slate-200/80 rounded-xl p-5 shadow-xs">
       <div className="flex items-end justify-between gap-4 flex-wrap mb-4">
         <div>
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-            Total Stok
-          </p>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{t("Total Stok")}</p>
           <p className="text-3xl font-bold text-slate-900 leading-none">
             {stock.quantity}
             <span className="text-base font-semibold text-slate-400 ml-1.5">pcs</span>
           </p>
         </div>
         <div className="text-right">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-            Siap Pakai
-          </p>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{t("Siap Pakai")}</p>
           <p className="text-3xl font-bold text-emerald-600 leading-none">
             {stock.activeQty}
             <span className="text-base font-semibold text-emerald-400 ml-1.5">pcs</span>
@@ -99,7 +98,7 @@ export default function StockSummary({ stock }: { stock: AssetStock }) {
               key={s.key}
               className={`${s.bar} transition-all duration-200 ease-in-out`}
               style={{ width: `${(s.qty / total) * 100}%` }}
-              title={`${s.label}: ${s.qty} pcs`}
+              title={`${t(s.label)}: ${s.qty} pcs`}
             />
           ))}
         </div>
@@ -107,16 +106,14 @@ export default function StockSummary({ stock }: { stock: AssetStock }) {
 
       <div className="flex flex-wrap gap-2">
         {filled.length === 0 ? (
-          <p className="text-sm text-slate-400">
-            Stok habis — seluruh unit sudah dihapus melalui BAP.
-          </p>
+          <p className="text-sm text-slate-400">{t("Stok habis — seluruh unit sudah dihapus melalui BAP.")}</p>
         ) : (
           filled.map((s) => (
             <span
               key={s.key}
               className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${s.badge}`}
             >
-              {s.label}: {s.qty} pcs
+              {t(s.label)}: {s.qty} pcs
             </span>
           ))
         )}
@@ -124,9 +121,7 @@ export default function StockSummary({ stock }: { stock: AssetStock }) {
 
       {stock.reservedQty > 0 && (
         <p className="text-xs text-violet-700 bg-violet-50 border border-violet-200/60 rounded-lg px-3 py-2 mt-3">
-          <UiIcon name="clock" className="inline-block align-middle" /> {stock.reservedQty} pcs sedang menunggu persetujuan BAP dan tidak dapat
-          dipakai, dilaporkan rusak, atau diajukan ulang. Sisa stok tetap dapat digunakan.
-        </p>
+          <UiIcon name="clock" className="inline-block align-middle" /> {stock.reservedQty}{" "}{t("pcs sedang menunggu persetujuan BAP dan tidak dapat dipakai, dilaporkan rusak, atau diajukan ulang. Sisa stok tetap dapat digunakan.")}</p>
       )}
     </div>
   );
@@ -134,6 +129,7 @@ export default function StockSummary({ stock }: { stock: AssetStock }) {
 
 /** Versi ringkas untuk sel tabel: "90 / 100 pcs" + bar tipis. */
 export function StockInline({ stock }: { stock: AssetStock }) {
+  const { t } = useI18n();
   const segments = segmentsOf(stock).filter((s) => s.qty > 0);
   const total = Math.max(stock.quantity, 1);
 
@@ -149,7 +145,7 @@ export function StockInline({ stock }: { stock: AssetStock }) {
             key={s.key}
             className={s.bar}
             style={{ width: `${(s.qty / total) * 100}%` }}
-            title={`${s.label}: ${s.qty} pcs`}
+            title={`${t(s.label)}: ${s.qty} pcs`}
           />
         ))}
       </div>

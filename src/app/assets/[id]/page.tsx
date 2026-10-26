@@ -1,3 +1,4 @@
+import { getI18n } from "@/lib/i18n/server";
 import GuideCard from "@/components/GuideCard";
 import UiIcon from "@/components/UiIcon";
 
@@ -22,6 +23,7 @@ export default async function AssetDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { t, locale } = await getI18n();
   const { id } = await params;
 
   // Halaman ini melakukan query langsung, jadi guard-nya WAJIB di sini juga,
@@ -32,7 +34,7 @@ export default async function AssetDetailPage({
       <AccessDenied
         message={UNASSIGNED_MESSAGE}
         backHref="/login"
-        backLabel="Kembali ke Halaman Masuk"
+        backLabel={t("Kembali ke Halaman Masuk")}
       />
     );
   }
@@ -79,11 +81,11 @@ export default async function AssetDetailPage({
       <AccessDenied
         message={
           accessError.error === "Unauthorized cross-branch access detected."
-            ? "Aset ini berada di outlet lain dan tidak dapat diakses."
-            : "Aset ini berada di luar cakupan divisi Anda."
+            ? t("Aset ini berada di outlet lain dan tidak dapat diakses.")
+            : t("Aset ini berada di luar cakupan divisi Anda.")
         }
         backHref="/assets"
-        backLabel="← Kembali ke Daftar Aset"
+        backLabel={t("← Kembali ke Daftar Aset")}
       />
     );
   }
@@ -111,7 +113,7 @@ export default async function AssetDetailPage({
     <div className="space-y-6 animate-fade-in">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-slate-500">
-        <Link href="/assets" className="hover:text-indigo-600 hover:underline">Daftar Aset</Link>
+        <Link href="/assets" className="hover:text-indigo-600 hover:underline">{t("Daftar Aset")}</Link>
         <span>/</span>
         <span className="text-slate-800 font-medium truncate max-w-xs">{asset.name}</span>
       </div>
@@ -122,7 +124,7 @@ export default async function AssetDetailPage({
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="page-title">{asset.name}</h1>
             <span className={`status-badge ${ASSET_STATUS_COLORS[asset.status] || STATUS_COLOR_FALLBACK}`}>
-              {ASSET_STATUS_LABELS[asset.status] || asset.status}
+              {t(ASSET_STATUS_LABELS[asset.status] || asset.status)}
             </span>
           </div>
           <p className="text-slate-500 mt-1">
@@ -139,8 +141,7 @@ export default async function AssetDetailPage({
               href={`/assets/${asset.id}/edit`}
               className="bg-white border border-slate-200 text-slate-700 font-semibold px-4 py-2 rounded-lg text-sm hover:bg-slate-50 transition shadow-xs"
             >
-              <UiIcon name="edit" className="inline-block align-middle" /> Edit Aset
-            </Link>
+              <UiIcon name="edit" className="inline-block align-middle" />{" "}{t("Edit Aset")}</Link>
           </div>
         )}
       </div>
@@ -154,13 +155,13 @@ export default async function AssetDetailPage({
         }`}>
           {daysUntilWarranty <= 0 ? "🔴" : "⚠️"}
           {daysUntilWarranty <= 0
-            ? `Garansi sudah kadaluarsa ${Math.abs(daysUntilWarranty)} hari yang lalu (${formatDate(asset.warrantyDate)}).`
-            : `Garansi akan habis dalam ${daysUntilWarranty} hari (${formatDate(asset.warrantyDate)}).`
+            ? t("Garansi sudah kadaluarsa {0} hari yang lalu ({1}).", [Math.abs(daysUntilWarranty), formatDate(asset.warrantyDate, locale)])
+            : t("Garansi akan habis dalam {0} hari ({1}).", [daysUntilWarranty, formatDate(asset.warrantyDate, locale)])
           }
         </div>
       )}
 
-      <GuideCard title="Kelola aset dari satu halaman" icon="info">Periksa rincian stok di bawah, lalu pilih tindakan yang diperlukan. Insiden untuk kerusakan, mutasi untuk perpindahan cabang, dan BAP untuk penghapusan stok yang disertai dokumen.</GuideCard>
+      <GuideCard title={t("Kelola aset dari satu halaman")} icon="info">{t("Periksa rincian stok di bawah, lalu pilih tindakan yang diperlukan. Insiden untuk kerusakan, mutasi untuk perpindahan cabang, dan BAP untuk penghapusan stok yang disertai dokumen.")}</GuideCard>
 
       {/* Client Component (Tabs, Modal Transfer, Modal Insiden) */}
       <AssetDetailClient

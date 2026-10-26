@@ -1,3 +1,4 @@
+import { getI18n } from "@/lib/i18n/server";
 
 import UiIcon from "@/components/UiIcon";
 import PageHeading from "@/components/PageHeading";
@@ -48,6 +49,7 @@ async function AssetListContent({
   searchParams: SearchParams;
   ctx: RequestContext;
 }) {
+  const { t, locale } = await getI18n();
   const { db, scope, user } = ctx;
   const isAdmin = isAdminRole(user.role);
   const isSuperAdmin = scope.divisionId === null;
@@ -164,12 +166,12 @@ async function AssetListContent({
         <div className="asset-filter-controls flex flex-wrap gap-3 items-end">
           {/* Search */}
           <div className="flex-1 min-w-0 basis-[200px]">
-            <label htmlFor="assets-page-field-1" className={labelClass}>Cari</label>
+            <label htmlFor="assets-page-field-1" className={labelClass}>{t("Cari")}</label>
             <input id="assets-page-field-1"
               type="text"
               name="search"
               defaultValue={searchParams.search || ""}
-              placeholder="Nama, serial, brand, model..."
+              placeholder={t("Nama, serial, brand, model...")}
               className={`${selectClass} placeholder:text-slate-400`}
             />
           </div>
@@ -177,9 +179,9 @@ async function AssetListContent({
           {/* Filter Divisi — hanya SUPER_ADMIN; peran lain terkunci divisinya */}
           {isSuperAdmin && (
             <div className="min-w-[150px]">
-              <label htmlFor="assets-page-field-2" className={labelClass}>Divisi</label>
+              <label htmlFor="assets-page-field-2" className={labelClass}>{t("Divisi")}</label>
               <select id="assets-page-field-2" name="divisionId" defaultValue={searchParams.divisionId || ""} className={selectClass}>
-                <option value="">Semua Divisi</option>
+                <option value="">{t("Semua Divisi")}</option>
                 {divisions.map((d) => (
                   <option key={d.id} value={d.id}>{d.name}</option>
                 ))}
@@ -190,15 +192,15 @@ async function AssetListContent({
           {/* Filter Cabang — pengguna ber-outlet tunggal melihat outletnya sebagai
               keterangan mati agar jelas bahwa cakupannya memang terkunci. */}
           <div className="min-w-[160px]">
-            <label className={labelClass}>Cabang</label>
+            <label className={labelClass}>{t("Cabang")}</label>
             {lockedBranch ? (
               <div className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-500 bg-slate-100 flex items-center gap-1.5 cursor-not-allowed">
                 <span><UiIcon name="building" className="inline-block align-middle" /></span>
                 <span className="truncate">{lockedBranch.name}</span>
               </div>
             ) : (
-              <select aria-label="Cabang" name="branchId" defaultValue={searchParams.branchId || ""} className={selectClass}>
-                <option value="">{isSuperAdmin ? "Semua Cabang" : "Semua Outlet Saya"}</option>
+              <select aria-label={t("Cabang")} name="branchId" defaultValue={searchParams.branchId || ""} className={selectClass}>
+                <option value="">{isSuperAdmin ? t("Semua Cabang") : t("Semua Outlet Saya")}</option>
                 {branches.map((b) => (
                   <option key={b.id} value={b.id}>{b.name}</option>
                 ))}
@@ -208,9 +210,9 @@ async function AssetListContent({
 
           {/* Filter Kategori */}
           <div className="min-w-[160px]">
-            <label htmlFor="assets-page-field-3" className={labelClass}>Kategori</label>
+            <label htmlFor="assets-page-field-3" className={labelClass}>{t("Kategori")}</label>
             <select id="assets-page-field-3" name="categoryId" defaultValue={searchParams.categoryId || ""} className={selectClass}>
-              <option value="">Semua Kategori</option>
+              <option value="">{t("Semua Kategori")}</option>
               {categoryOptions.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -221,16 +223,16 @@ async function AssetListContent({
           <div className="min-w-[140px]">
             <label htmlFor="assets-page-field-4" className={labelClass}>Status</label>
             <select id="assets-page-field-4" name="status" defaultValue={searchParams.status || ""} className={selectClass}>
-              <option value="">Semua Status</option>
+              <option value="">{t("Semua Status")}</option>
               {ASSET_STATUSES.map((s) => (
-                <option key={s} value={s}>{ASSET_STATUS_LABELS[s] || s}</option>
+                <option key={s} value={s}>{t(ASSET_STATUS_LABELS[s] || s)}</option>
               ))}
             </select>
           </div>
 
           {/* Filter Tanggal Dari */}
           <div className="min-w-[145px]">
-            <label htmlFor="assets-page-field-5" className={labelClass}>Dari Tanggal</label>
+            <label htmlFor="assets-page-field-5" className={labelClass}>{t("Dari Tanggal")}</label>
             <input id="assets-page-field-5"
               type="date"
               name="dateFrom"
@@ -243,7 +245,7 @@ async function AssetListContent({
 
           {/* Filter Tanggal Sampai */}
           <div className="min-w-[145px]">
-            <label htmlFor="assets-page-field-6" className={labelClass}>Sampai Tanggal</label>
+            <label htmlFor="assets-page-field-6" className={labelClass}>{t("Sampai Tanggal")}</label>
             <input id="assets-page-field-6"
               type="date"
               name="dateTo"
@@ -273,17 +275,15 @@ async function AssetListContent({
 
       {/* Results Info */}
       <div className="flex items-center justify-between text-sm text-slate-500">
-        <span>
-          Menampilkan <strong className="text-slate-700">{assets.length}</strong> dari <strong className="text-slate-700">{total}</strong> aset
-          {searchParams.search && <> untuk pencarian &ldquo;<em>{searchParams.search}</em>&rdquo;</>}
+        <span>{t("Menampilkan")}{" "}<strong className="text-slate-700">{assets.length}</strong>{" "}{t("dari")}{" "}<strong className="text-slate-700">{total}</strong>{" "}{t("aset")}{searchParams.search && <>{" "}{t("untuk pencarian &ldquo;")}<em>{searchParams.search}</em>{t("&rdquo;")}</>}
           {(dateFrom || dateTo) && (
             <span className="ml-1 text-xs bg-indigo-50 text-indigo-700 font-semibold px-2 py-0.5 rounded-full border border-indigo-100">
-              <UiIcon name="calendar" className="inline-block align-middle" /> {dateFrom || "awal"} → {dateTo || "sekarang"}
+              <UiIcon name="calendar" className="inline-block align-middle" /> {dateFrom || t("awal")} → {dateTo || t("sekarang")}
             </span>
           )}
         </span>
         {total > 0 && (
-          <span>Halaman {page} dari {totalPages}</span>
+          <span>{t("Halaman")}{" "}{page}{" "}{t("dari")}{" "}{totalPages}</span>
         )}
       </div>
 
@@ -292,16 +292,14 @@ async function AssetListContent({
         {assets.length === 0 ? (
           <div className="py-16 text-center">
             <div className="text-5xl mb-3 opacity-60"><UiIcon size={40} name="box" className="inline-block align-middle" /></div>
-            <p className="font-semibold text-slate-700">Tidak ada aset ditemukan</p>
+            <p className="font-semibold text-slate-700">{t("Tidak ada aset ditemukan")}</p>
             <p className="text-xs text-slate-400 mt-1">
-              {isAdmin ? "Coba ubah filter atau tambah aset baru" : "Coba ubah filter pencarian"}
+              {isAdmin ? t("Coba ubah filter atau tambah aset baru") : t("Coba ubah filter pencarian")}
             </p>
             {/* CTA hanya untuk admin — staf tidak boleh melihat jalur ke form
                 tambah aset (CLAUDE.md §2) */}
             {isAdmin && (
-              <Link href="/assets/new" className="mt-4 inline-block bg-indigo-600 text-white font-semibold px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 active:scale-[0.98] transition-all duration-200 ease-in-out">
-                + Tambah Aset
-              </Link>
+              <Link href="/assets/new" className="mt-4 inline-block bg-indigo-600 text-white font-semibold px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 active:scale-[0.98] transition-all duration-200 ease-in-out">{t("+ Tambah Aset")}</Link>
             )}
           </div>
         ) : (
@@ -309,16 +307,16 @@ async function AssetListContent({
             <table className="inventory-table w-full text-sm text-left">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Nama Perangkat</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Kategori</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("Nama Perangkat")}</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("Kategori")}</th>
                   <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Serial Number</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Cabang</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("Cabang")}</th>
                   <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Stok (Aktif / Total)</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Garansi Hingga</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Terdaftar</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Insiden</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Aksi</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("Stok (Aktif / Total)")}</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("Garansi Hingga")}</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("Terdaftar")}</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("Insiden")}</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">{t("Aksi")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -344,7 +342,7 @@ async function AssetListContent({
                       <td className="px-4 py-3 text-slate-600">{asset.branch.name}</td>
                       <td className="px-4 py-3">
                         <span className={`status-badge status-badge-sm ${ASSET_STATUS_COLORS[asset.status] || STATUS_COLOR_FALLBACK}`}>
-                          {ASSET_STATUS_LABELS[asset.status] || asset.status}
+                          {t(ASSET_STATUS_LABELS[asset.status] || asset.status)}
                         </span>
                       </td>
                       <td className="px-4 py-3">
@@ -355,15 +353,15 @@ async function AssetListContent({
                       }`}>
                         {asset.warrantyDate ? (
                           <span>
-                            {formatDate(asset.warrantyDate)}
-                            {warrantyExpired && <span className="block text-xs font-semibold text-red-500"><UiIcon name="warning" className="inline-block align-middle" /> Kadaluarsa</span>}
-                            {warrantyUrgent && <span className="block text-xs font-semibold text-amber-500"><UiIcon name="warning" className="inline-block align-middle" /> Segera habis</span>}
+                            {formatDate(asset.warrantyDate, locale)}
+                            {warrantyExpired && <span className="block text-xs font-semibold text-red-500"><UiIcon name="warning" className="inline-block align-middle" />{" "}{t("Kadaluarsa")}</span>}
+                            {warrantyUrgent && <span className="block text-xs font-semibold text-amber-500"><UiIcon name="warning" className="inline-block align-middle" />{" "}{t("Segera habis")}</span>}
                           </span>
                         ) : (
                           <span className="text-slate-300">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-xs text-slate-500">{formatDate(asset.createdAt)}</td>
+                      <td className="px-4 py-3 text-xs text-slate-500">{formatDate(asset.createdAt, locale)}</td>
                       <td className="px-4 py-3">
                         {asset._count.incidents > 0 ? (
                           <span className="text-xs font-semibold bg-red-50 text-red-700 border border-red-100 px-2 py-0.5 rounded-full">
@@ -377,9 +375,7 @@ async function AssetListContent({
                         <Link
                           href={`/assets/${asset.id}`}
                           className="text-indigo-600 font-semibold text-xs hover:underline"
-                        >
-                          Detail →
-                        </Link>
+                        >{t("Detail →")}</Link>
                       </td>
                     </tr>
                   );
@@ -394,9 +390,7 @@ async function AssetListContent({
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           {page > 1 && (
-            <Link href={buildUrl({ page: String(page - 1) })} className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 transition font-medium text-slate-700">
-              ← Sebelumnya
-            </Link>
+            <Link href={buildUrl({ page: String(page - 1) })} className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 transition font-medium text-slate-700">{t("← Sebelumnya")}</Link>
           )}
           {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i + 1).map((p) => (
             <Link
@@ -412,9 +406,7 @@ async function AssetListContent({
             </Link>
           ))}
           {page < totalPages && (
-            <Link href={buildUrl({ page: String(page + 1) })} className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 transition font-medium text-slate-700">
-              Berikutnya →
-            </Link>
+            <Link href={buildUrl({ page: String(page + 1) })} className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 transition font-medium text-slate-700">{t("Berikutnya →")}</Link>
           )}
         </div>
       )}
@@ -427,6 +419,7 @@ export default async function AssetsPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
+  const { t, locale } = await getI18n();
   const [params, ctx] = await Promise.all([searchParams, getPageContext()]);
 
   // Cakupan pengguna: organisasi (client tenant) + divisi + outlet
@@ -435,30 +428,29 @@ export default async function AssetsPage({
       <AccessDenied
         message={UNASSIGNED_MESSAGE}
         backHref="/login"
-        backLabel="Kembali ke Halaman Masuk"
+        backLabel={t("Kembali ke Halaman Masuk")}
       />
     );
   }
 
   const { scope, user } = ctx;
-  const title = scope.divisionId ? `Daftar Aset ${user.division?.name ?? ""}` : "Daftar Semua Aset";
-  const subtitle = `Kelola aset ${scope.divisionId ? `divisi ${user.division?.name ?? ""}` : "seluruh divisi"} di ${branchScopeLabel(user)}.`;
+  const title = scope.divisionId ? t("Daftar Aset {0}", [user.division?.name ?? ""]) : t("Daftar Semua Aset");
+  const subtitle = t("Kelola aset {0} di {1}.", [scope.divisionId ? t("divisi {0}", [user.division?.name ?? ""]) : t("seluruh divisi"), branchScopeLabel(user, locale)]);
 
   return (
     <div className="space-y-5 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <PageHeading eyebrow="Inventaris & operasional" title={<>{title}</>} description={<>{subtitle}</>} />
+        <PageHeading eyebrow={t("Inventaris & operasional")} title={<>{title}</>} description={<>{subtitle}</>} />
         {isAdminRole(user.role) && (
           <Link
             href="/assets/new"
             className="bg-indigo-600 text-white font-semibold px-4 py-2.5 rounded-xl text-sm hover:bg-indigo-700 active:scale-[0.98] transition-all duration-200 ease-in-out shadow-sm flex items-center gap-2"
           >
-            <span>+</span> Tambah Aset
-          </Link>
+            <span>+</span>{" "}{t("Tambah Aset")}</Link>
         )}
       </div>
-      <GuideCard title="Temukan aset yang Anda butuhkan" icon="box">Gunakan pencarian dan filter untuk mempersempit daftar. Buka Detail untuk melihat stok, melaporkan insiden, mengajukan mutasi, atau mengajukan penghapusan (BAP).</GuideCard>
+      <GuideCard title={t("Temukan aset yang Anda butuhkan")} icon="box">{t("Gunakan pencarian dan filter untuk mempersempit daftar. Buka Detail untuk melihat stok, melaporkan insiden, mengajukan mutasi, atau mengajukan penghapusan (BAP).")}</GuideCard>
 
 
       <Suspense fallback={

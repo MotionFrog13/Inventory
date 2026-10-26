@@ -1,3 +1,4 @@
+import { getI18n } from "@/lib/i18n/server";
 import { notFound } from "next/navigation";
 import { getPageContext } from "@/lib/auth";
 import { isAdminRole } from "@/lib/utils";
@@ -13,6 +14,7 @@ interface EditAssetPageProps {
 }
 
 export default async function EditAssetPage({ params }: EditAssetPageProps) {
+  const { t } = await getI18n();
   const { id } = await params;
 
   // 1. Konteks request (fail closed bila belum ditugaskan)
@@ -22,7 +24,7 @@ export default async function EditAssetPage({ params }: EditAssetPageProps) {
       <AccessDenied
         message={UNASSIGNED_MESSAGE}
         backHref="/login"
-        backLabel="Kembali ke Halaman Masuk"
+        backLabel={t("Kembali ke Halaman Masuk")}
       />
     );
   }
@@ -32,11 +34,9 @@ export default async function EditAssetPage({ params }: EditAssetPageProps) {
   if (!isAdminRole(user.role)) {
     return (
       <div className="bg-red-50 border border-red-200 text-red-800 rounded-xl p-6 shadow-xs max-w-lg mx-auto my-10 text-center space-y-3">
-        <h2 className="text-lg font-bold">Akses Ditolak</h2>
-        <p className="text-sm">Anda tidak memiliki hak akses untuk mengedit spesifikasi aset.</p>
-        <Link href={`/assets/${id}`} className="inline-block bg-red-600 text-white font-semibold px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition shadow-xs">
-          Kembali ke Detail Aset
-        </Link>
+        <h2 className="text-lg font-bold">{t("Akses Ditolak")}</h2>
+        <p className="text-sm">{t("Anda tidak memiliki hak akses untuk mengedit spesifikasi aset.")}</p>
+        <Link href={`/assets/${id}`} className="inline-block bg-red-600 text-white font-semibold px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition shadow-xs">{t("Kembali ke Detail Aset")}</Link>
       </div>
     );
   }
@@ -58,11 +58,11 @@ export default async function EditAssetPage({ params }: EditAssetPageProps) {
       <AccessDenied
         message={
           accessError.error === "Unauthorized cross-branch access detected."
-            ? "Aset ini berada di outlet lain dan tidak dapat diedit."
-            : "Anda tidak memiliki akses ke aset di divisi ini."
+            ? t("Aset ini berada di outlet lain dan tidak dapat diedit.")
+            : t("Anda tidak memiliki akses ke aset di divisi ini.")
         }
         backHref="/assets"
-        backLabel="← Kembali ke Daftar Aset"
+        backLabel={t("← Kembali ke Daftar Aset")}
       />
     );
   }
@@ -73,15 +73,13 @@ export default async function EditAssetPage({ params }: EditAssetPageProps) {
   if (asset.status === "BAP_PENDING" || asset.status === "BAP") {
     return (
       <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-6 shadow-xs max-w-lg mx-auto my-10 text-center space-y-3">
-        <h2 className="text-lg font-bold">Aset Terkunci</h2>
+        <h2 className="text-lg font-bold">{t("Aset Terkunci")}</h2>
         <p className="text-sm">
           {asset.status === "BAP"
-            ? "Seluruh stok aset ini sudah dihapus melalui BAP dan tidak dapat diedit."
-            : "Seluruh sisa stok aset ini sedang menunggu persetujuan BAP, sehingga belum dapat diedit."}
+            ? t("Seluruh stok aset ini sudah dihapus melalui BAP dan tidak dapat diedit.")
+            : t("Seluruh sisa stok aset ini sedang menunggu persetujuan BAP, sehingga belum dapat diedit.")}
         </p>
-        <Link href={`/assets/${id}`} className="inline-block bg-amber-600 text-white font-semibold px-4 py-2 rounded-lg text-sm hover:bg-amber-700 transition shadow-xs">
-          Kembali ke Detail Aset
-        </Link>
+        <Link href={`/assets/${id}`} className="inline-block bg-amber-600 text-white font-semibold px-4 py-2 rounded-lg text-sm hover:bg-amber-700 transition shadow-xs">{t("Kembali ke Detail Aset")}</Link>
       </div>
     );
   }

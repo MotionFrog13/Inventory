@@ -1,3 +1,5 @@
+import { getI18n } from "@/lib/i18n/server";
+import { formatDateTime } from "@/lib/utils";
 
 import UiIcon from "@/components/UiIcon";
 import PageHeading from "@/components/PageHeading";
@@ -24,13 +26,7 @@ interface SearchParams {
   page?: string;
 }
 
-function formatDateTime(d: Date | string): string {
-  return new Date(d).toLocaleDateString("id-ID", {
-    day: "numeric", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
-    timeZone: "Asia/Jakarta",
-  }) + " WIB";
-}
+
 
 async function TransfersContent({
   searchParams,
@@ -39,6 +35,7 @@ async function TransfersContent({
   searchParams: SearchParams;
   ctx: RequestContext;
 }) {
+  const { t, locale } = await getI18n();
   const { db, scope, user } = ctx;
   // Clamp: `?page=abc` / `?page=0` menghasilkan skip NaN/negatif yang membuat
   // Prisma melempar error dan halaman gagal dirender.
@@ -93,7 +90,7 @@ async function TransfersContent({
     return `/transfers?${params.toString()}`;
   }
 
-  const divisionText = `aset ${divisionScopeLabel(user)}`;
+  const divisionText = t("aset {0}", [divisionScopeLabel(user, locale)]);
 
   return (
     <>
@@ -101,18 +98,18 @@ async function TransfersContent({
       <form method="GET" action="/transfers" className="ui-panel bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
         <div className="flex flex-wrap gap-3 items-end">
           <div className="min-w-[160px]">
-            <label htmlFor="transfers-page-field-1" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Dari Cabang</label>
+            <label htmlFor="transfers-page-field-1" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">{t("Dari Cabang")}</label>
             <select id="transfers-page-field-1" name="fromBranchId" defaultValue={searchParams.fromBranchId || ""}
               className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              <option value="">Semua Cabang</option>
+              <option value="">{t("Semua Cabang")}</option>
               {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
           </div>
           <div className="min-w-[160px]">
-            <label htmlFor="transfers-page-field-2" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Ke Cabang</label>
+            <label htmlFor="transfers-page-field-2" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">{t("Ke Cabang")}</label>
             <select id="transfers-page-field-2" name="toBranchId" defaultValue={searchParams.toBranchId || ""}
               className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              <option value="">Semua Cabang</option>
+              <option value="">{t("Semua Cabang")}</option>
               {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
           </div>
@@ -128,15 +125,15 @@ async function TransfersContent({
       </form>
 
       <div className="text-sm text-slate-500">
-        Total <strong className="text-slate-700">{total}</strong> riwayat perpindahan {divisionText}
+        Total <strong className="text-slate-700">{total}</strong>{" "}{t("riwayat perpindahan")}{" "}{divisionText}
       </div>
 
       {/* Timeline */}
       {transfers.length === 0 ? (
         <div className="ui-panel bg-white border border-slate-200 rounded-xl py-16 text-center">
           <div className="text-5xl mb-3"><UiIcon size={40} name="transfer" className="inline-block align-middle" /></div>
-          <p className="font-semibold text-slate-700">Tidak ada riwayat transfer</p>
-          <p className="text-xs text-slate-400 mt-1">Belum ada perpindahan aset yang tercatat dengan filter ini.</p>
+          <p className="font-semibold text-slate-700">{t("Tidak ada riwayat transfer")}</p>
+          <p className="text-xs text-slate-400 mt-1">{t("Belum ada perpindahan aset yang tercatat dengan filter ini.")}</p>
         </div>
       ) : (
         <div className="relative">
@@ -163,7 +160,7 @@ async function TransfersContent({
                         {/* Status wajib terlihat: transfer PENDING belum
                             memindahkan aset, sedangkan APPROVED sudah. */}
                         <span className={`status-badge status-badge-sm ${TRANSFER_STATUS_COLORS[transfer.status] || STATUS_COLOR_FALLBACK}`}>
-                          {TRANSFER_STATUS_LABELS[transfer.status] || transfer.status}
+                          {t(TRANSFER_STATUS_LABELS[transfer.status] || transfer.status)}
                         </span>
                       </div>
 
@@ -184,8 +181,8 @@ async function TransfersContent({
 
                     {/* Meta */}
                     <div className="text-right flex-shrink-0">
-                      <p className="text-xs font-semibold text-slate-700">{formatDateTime(transfer.transferredAt)}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">oleh {transfer.requestedBy?.name || "-"}</p>
+                      <p className="text-xs font-semibold text-slate-700">{formatDateTime(transfer.transferredAt, locale)}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">{t("oleh")}{" "}{transfer.requestedBy?.name || "-"}</p>
                     </div>
                   </div>
                 </div>
@@ -199,9 +196,7 @@ async function TransfersContent({
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           {page > 1 && (
-            <Link href={buildUrl({ page: String(page - 1) })} className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 transition font-medium text-slate-700">
-              ← Sebelumnya
-            </Link>
+            <Link href={buildUrl({ page: String(page - 1) })} className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 transition font-medium text-slate-700">{t("← Sebelumnya")}</Link>
           )}
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
             <Link key={p} href={buildUrl({ page: String(p) })}
@@ -213,9 +208,7 @@ async function TransfersContent({
             </Link>
           ))}
           {page < totalPages && (
-            <Link href={buildUrl({ page: String(page + 1) })} className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 transition font-medium text-slate-700">
-              Berikutnya →
-            </Link>
+            <Link href={buildUrl({ page: String(page + 1) })} className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 transition font-medium text-slate-700">{t("Berikutnya →")}</Link>
           )}
         </div>
       )}
@@ -228,6 +221,7 @@ export default async function TransfersPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
+  const { t, locale } = await getI18n();
   const [params, ctx] = await Promise.all([searchParams, getPageContext()]);
 
   // Filter organisasi + divisi + outlet diterapkan di tingkat query (CLAUDE.md §2)
@@ -236,22 +230,22 @@ export default async function TransfersPage({
       <AccessDenied
         message={UNASSIGNED_MESSAGE}
         backHref="/login"
-        backLabel="Kembali ke Halaman Masuk"
+        backLabel={t("Kembali ke Halaman Masuk")}
       />
     );
   }
 
   const { scope, user } = ctx;
   const isBranchBound = scope.branchIds !== null;
-  const assetLabel = `aset ${divisionScopeLabel(user)}`;
+  const assetLabel = t("aset {0}", [divisionScopeLabel(user, locale)]);
   const currentSubtitle = isBranchBound
-    ? `Kronologis mutasi ${assetLabel} yang keluar dari maupun masuk ke ${branchScopeLabel(user)}.`
-    : `Kronologis mutasi dan perpindahan ${assetLabel} antar ${branchScopeLabel(user)}.`;
+    ? t("Kronologis mutasi {0} yang keluar dari maupun masuk ke {1}.", [assetLabel, branchScopeLabel(user, locale)])
+    : t("Kronologis mutasi dan perpindahan {0} antar {1}.", [assetLabel, branchScopeLabel(user, locale)]);
 
   return (
     <div className="space-y-5 animate-fade-in">
-      <PageHeading eyebrow="Inventaris & operasional" title={<>Riwayat Mutasi Aset</>} description={<>{currentSubtitle}</>} />
-      <GuideCard title="Mutasi diproses setelah disetujui" icon="transfer">Permintaan mutasi belum mengubah lokasi aset. Persetujuan dilakukan oleh admin outlet asal atau Super Admin.</GuideCard>
+      <PageHeading eyebrow={t("Inventaris & operasional")} title={<>{t("Riwayat Mutasi Aset")}</>} description={<>{currentSubtitle}</>} />
+      <GuideCard title={t("Mutasi diproses setelah disetujui")} icon="transfer">{t("Permintaan mutasi belum mengubah lokasi aset. Persetujuan dilakukan oleh admin outlet asal atau Super Admin.")}</GuideCard>
 
 
       <Suspense fallback={

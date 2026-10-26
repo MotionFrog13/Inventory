@@ -10,10 +10,12 @@ import * as mdm from "./qa/suites/mdm";
 import * as transfers from "./qa/suites/transfers";
 import * as users from "./qa/suites/users";
 import * as security from "./qa/suites/security";
+import * as i18n from "./qa/suites/i18n";
 
 // Urutan penting: suite belakangan mengandalkan route yang diuji lebih dulu.
 const SUITES: Record<string, () => Promise<void>> = {
   auth: auth.run,
+  i18n: i18n.run,
   divisions: divisions.run,
   assets: assets.run,
   branches: branches.run,

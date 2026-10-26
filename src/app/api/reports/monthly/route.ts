@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { successResponse, errorResponse } from "@/lib/utils";
 import { assetRelationScopeWhere } from "@/lib/scope";
 import { requireUserScope } from "@/lib/auth";
+import { intlLocale, LANGUAGE_COOKIE, resolveLocale } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,7 @@ export async function GET(request: NextRequest) {
     const ctx = await requireUserScope(request);
     if (!ctx.ok) return ctx.response;
     const { db, scope } = ctx;
+    const locale = resolveLocale(request.cookies.get(LANGUAGE_COOKIE)?.value);
 
     // Get incidents from the last 12 months
     const twelveMonthsAgo = new Date();
@@ -40,7 +42,7 @@ export async function GET(request: NextRequest) {
     incidents.forEach((incident) => {
       const date = new Date(incident.reportedAt);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-      const monthLabel = date.toLocaleDateString("id-ID", {
+      const monthLabel = date.toLocaleDateString(intlLocale(locale), {
         month: "long",
         year: "numeric",
         timeZone: "Asia/Jakarta",

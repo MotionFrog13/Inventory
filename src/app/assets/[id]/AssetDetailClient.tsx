@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/components/LanguageProvider";
+import { formatDate, formatDateTime } from "@/lib/utils";
 import UiIcon from "@/components/UiIcon";
 import Dialog from "@/components/Dialog";
 
@@ -105,31 +107,12 @@ interface Props {
 
 type Tab = "info" | "incidents" | "transfers";
 
-function formatDate(d: Date | string | null): string {
-  if (!d) return "—";
-  return new Date(d).toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "Asia/Jakarta",
-  });
-}
 
-function formatDateTime(d: Date | string | null): string {
-  if (!d) return "—";
-  return (
-    new Date(d).toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone: "Asia/Jakarta",
-    }) + " WIB"
-  );
-}
+
+
 
 export default function AssetDetailClient({ asset, incidents, transfers, branches, userRole, bap }: Props) {
+  const { t, locale } = useI18n();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("info");
 
@@ -475,9 +458,9 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
   }
 
   const TABS: { key: Tab; label: string; count?: number }[] = [
-    { key: "info", label: "Informasi Umum" },
-    { key: "incidents", label: "Riwayat Insiden", count: incidents.length },
-    { key: "transfers", label: "Riwayat Mutasi", count: transfers.length },
+    { key: "info", label: t("Informasi Umum") },
+    { key: "incidents", label: t("Riwayat Insiden"), count: incidents.length },
+    { key: "transfers", label: t("Riwayat Mutasi"), count: transfers.length },
   ];
 
   return (
@@ -492,7 +475,7 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
       <div className="flex flex-col gap-4 mb-4">
         {actionError && (
           <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg px-4 py-3 text-sm font-medium">
-            <UiIcon name="warning" className="inline-block align-middle" /> {actionError}
+            <UiIcon name="warning" className="inline-block align-middle" /> {t(actionError)}
           </div>
         )}
         
@@ -509,15 +492,13 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                 disabled={reportableQty <= 0}
                 className="bg-white border border-rose-200 text-rose-700 font-semibold px-4 py-2.5 rounded-xl text-sm hover:bg-rose-50 transition shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <UiIcon name="tool" className="inline-block align-middle" /> Buat Tiket Insiden
-              </button>
+                <UiIcon name="tool" className="inline-block align-middle" />{" "}{t("Buat Tiket Insiden")}</button>
               {branches.length > 0 && (
                 <button
                   onClick={() => { setShowTransferModal(true); setTransferError(null); setTransferForm({ toBranchId: "", reason: "" }); }}
                   className="bg-white border border-indigo-200 text-indigo-700 font-semibold px-4 py-2.5 rounded-xl text-sm hover:bg-indigo-50 transition shadow-xs"
                 >
-                  <UiIcon name="transfer" className="inline-block align-middle" /> Ajukan Mutasi
-                </button>
+                  <UiIcon name="transfer" className="inline-block align-middle" />{" "}{t("Ajukan Mutasi")}</button>
               )}
               {/* Hanya boleh ada satu pengajuan BAP menunggu persetujuan per aset */}
               <button
@@ -528,11 +509,10 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                   setBapForm({ quantity: "1", notes: "", sourceCondition: defaultBapSource() });
                 }}
                 disabled={hasPendingBap}
-                title={hasPendingBap ? "Masih ada pengajuan BAP yang menunggu persetujuan" : undefined}
+                title={hasPendingBap ? t("Masih ada pengajuan BAP yang menunggu persetujuan") : undefined}
                 className="bg-white border border-slate-200 text-slate-700 font-semibold px-4 py-2.5 rounded-xl text-sm hover:bg-slate-50 transition shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <UiIcon name="document" className="inline-block align-middle" /> Ajukan Penghapusan (BAP)
-              </button>
+                <UiIcon name="document" className="inline-block align-middle" />{" "}{t("Ajukan Penghapusan (BAP)")}</button>
             </>
           )}
 
@@ -541,44 +521,38 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
               berstatus ACTIVE sehingga tombol ini tidak boleh bergantung padanya. */}
           {hasPendingBap && isAdmin && (
             <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 p-2 rounded-lg flex-wrap">
-              <span className="text-xs font-semibold text-blue-800 px-2">
-                Persetujuan BAP ({bap?.quantity} pcs):
-              </span>
+              <span className="text-xs font-semibold text-blue-800 px-2">{t("Persetujuan BAP (")}{bap?.quantity}{" "}{t("pcs):")}</span>
               <button
                 onClick={handleApproveBap}
                 disabled={actionLoading}
                 className="bg-green-600 text-white font-semibold px-3 py-1.5 rounded-lg text-xs hover:bg-green-700 transition disabled:opacity-60"
               >
-                {actionLoading ? "Proses..." : "✓ Setujui BAP"}
+                {actionLoading ? t("Proses...") : t("✓ Setujui BAP")}
               </button>
               <button
                 onClick={() => { setShowRejectBapDialog(true); setBapRejectNotes(""); }}
                 disabled={actionLoading}
                 className="bg-red-600 text-white font-semibold px-3 py-1.5 rounded-lg text-xs hover:bg-red-700 transition disabled:opacity-60"
-              >
-                ✗ Tolak BAP
-              </button>
+              >{t("✗ Tolak BAP")}</button>
             </div>
           )}
 
           {/* Admin Approval controls for Transfer */}
           {pendingTransfer && isAdmin && (
             <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 p-2 rounded-lg">
-              <span className="text-xs font-semibold text-yellow-800 px-2">Persetujuan Transfer:</span>
+              <span className="text-xs font-semibold text-yellow-800 px-2">{t("Persetujuan Transfer:")}</span>
               <button
                 onClick={() => handleApproveTransfer(pendingTransfer.id)}
                 disabled={actionLoading}
                 className="bg-green-600 text-white font-semibold px-3 py-1.5 rounded-lg text-xs hover:bg-green-700 transition disabled:opacity-60"
               >
-                {actionLoading ? "Proses..." : "✓ Setujui Transfer"}
+                {actionLoading ? t("Proses...") : t("✓ Setujui Transfer")}
               </button>
               <button
                 onClick={() => handleRejectTransfer(pendingTransfer.id)}
                 disabled={actionLoading}
                 className="bg-red-600 text-white font-semibold px-3 py-1.5 rounded-lg text-xs hover:bg-red-700 transition disabled:opacity-60"
-              >
-                ✗ Tolak Transfer
-              </button>
+              >{t("✗ Tolak Transfer")}</button>
             </div>
           )}
         </div>
@@ -599,7 +573,7 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                   : "text-slate-600 hover:text-slate-900 hover:bg-white"
               }`}
             >
-              {tab.label}
+              {t(tab.label)}
               {tab.count !== undefined && (
                 <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
                   activeTab === tab.key ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-600"
@@ -617,36 +591,36 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
           {/* INFO TAB */}
           {activeTab === "info" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-5">
-              <InfoRow label="Nama Perangkat" value={asset.name} />
-              <InfoRow label="Divisi" value={asset.divisionName} />
-              <InfoRow label="Kategori" value={asset.categoryName} />
-              <InfoRow label="Brand / Merk" value={asset.brand || "—"} />
-              <InfoRow label="Model / Seri" value={asset.model || "—"} />
+              <InfoRow label={t("Nama Perangkat")} value={asset.name} />
+              <InfoRow label={t("Divisi")} value={asset.divisionName} />
+              <InfoRow label={t("Kategori")} value={asset.categoryName} />
+              <InfoRow label={t("Brand / Merk")} value={asset.brand || "—"} />
+              <InfoRow label={t("Model / Seri")} value={asset.model || "—"} />
               <InfoRow label="Serial Number" value={asset.serialNumber || "—"} mono />
-              <InfoRow label="Lokasi (Cabang)" value={asset.branch.name} />
+              <InfoRow label={t("Lokasi (Cabang)")} value={asset.branch.name} />
               <InfoRow label="Status" value={
                 <span className={`status-badge status-badge-sm ${ASSET_STATUS_COLORS[asset.status] || ""}`}>
-                  {ASSET_STATUS_LABELS[asset.status] || asset.status}
+                  {t(ASSET_STATUS_LABELS[asset.status] || asset.status)}
                 </span>
               } />
-              <InfoRow label="Tanggal Pembelian" value={formatDate(asset.purchaseDate)} />
-              <InfoRow label="Garansi Berakhir" value={formatDate(asset.warrantyDate)} />
-              <InfoRow label="Terdaftar" value={formatDateTime(asset.createdAt)} />
+              <InfoRow label={t("Tanggal Pembelian")} value={formatDate(asset.purchaseDate, locale)} />
+              <InfoRow label={t("Garansi Berakhir")} value={formatDate(asset.warrantyDate, locale)} />
+              <InfoRow label={t("Terdaftar")} value={formatDateTime(asset.createdAt, locale)} />
               {asset.specs && (
                 <div className="col-span-full">
-                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Spesifikasi</dt>
+                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">{t("Spesifikasi")}</dt>
                   <dd className="text-sm text-slate-800 bg-slate-50 rounded-lg px-4 py-3 whitespace-pre-wrap border border-slate-100">{asset.specs}</dd>
                 </div>
               )}
               {asset.notes && (
                 <div className="col-span-full">
-                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Catatan</dt>
+                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">{t("Catatan")}</dt>
                   <dd className="text-sm text-slate-800 bg-amber-50 rounded-lg px-4 py-3 whitespace-pre-wrap border border-amber-100">{asset.notes}</dd>
                 </div>
               )}
               {asset.photoUrl && (
                 <div className="col-span-full">
-                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Foto Perangkat</dt>
+                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">{t("Foto Perangkat")}</dt>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={asset.photoUrl} alt={asset.name} className="max-h-48 rounded-lg border border-slate-200 object-contain bg-slate-50" />
                 </div>
@@ -654,10 +628,9 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
               {bap && (
                 <div className="col-span-full border-t border-slate-200 pt-4 mt-2">
                   <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-1.5">
-                    <UiIcon name="document" className="inline-block align-middle" /> Detail Pengajuan BAP (Penghapusan Aset)
-                  </h3>
+                    <UiIcon name="document" className="inline-block align-middle" />{" "}{t("Detail Pengajuan BAP (Penghapusan Aset)")}</h3>
                   <div className="bg-indigo-50/20 rounded-xl border border-indigo-100 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <InfoRow label="Status BAP" value={
+                    <InfoRow label={t("Status BAP")} value={
                       <span className={`px-2 py-0.5 rounded text-xs font-bold ${
                         bap.status === "PENDING"
                           ? "bg-yellow-100 text-yellow-800"
@@ -665,41 +638,40 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                           ? "bg-green-100 text-green-800"
                           : "bg-red-100 text-red-800"
                       }`}>
-                        {bap.status === "PENDING" ? "Menunggu Persetujuan" : bap.status === "APPROVED" ? "Disetujui" : "Ditolak"}
+                        {bap.status === "PENDING" ? t("Menunggu Persetujuan") : bap.status === "APPROVED" ? t("Disetujui") : t("Ditolak")}
                       </span>
                     } />
-                    <InfoRow label="Jumlah Dihapus" value={`${bap.quantity} pcs`} />
+                    <InfoRow label={t("Jumlah Dihapus")} value={`${bap.quantity} pcs`} />
                     <InfoRow
-                      label="Diambil dari Stok"
+                      label={t("Diambil dari Stok")}
                       value={
-                        STOCK_CONDITION_LABELS[bap.sourceCondition as StockCondition] ??
-                        bap.sourceCondition
+                        t(STOCK_CONDITION_LABELS[bap.sourceCondition as StockCondition] ??
+                        bap.sourceCondition)
                       }
                     />
-                    <InfoRow label="Diajukan Oleh" value={bap.requestedBy.name} />
-                    <InfoRow label="Tanggal Pengajuan" value={formatDate(bap.createdAt)} />
+                    <InfoRow label={t("Diajukan Oleh")} value={bap.requestedBy.name} />
+                    <InfoRow label={t("Tanggal Pengajuan")} value={formatDate(bap.createdAt, locale)} />
                     {bap.approvedBy && (
                       <InfoRow
-                        label={bap.status === "APPROVED" ? "Disetujui Oleh" : "Ditolak Oleh"}
+                        label={bap.status === "APPROVED" ? t("Disetujui Oleh") : t("Ditolak Oleh")}
                         value={bap.approvedBy.name}
                       />
                     )}
                     {bap.notes && (
                       <div className="col-span-full">
-                        <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Catatan BAP</dt>
+                        <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{t("Catatan BAP")}</dt>
                         <dd className="text-sm text-slate-700">{bap.notes}</dd>
                       </div>
                     )}
                     <div className="col-span-full">
-                      <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Dokumen BAP</dt>
+                      <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{t("Dokumen BAP")}</dt>
                       <dd className="text-sm">
                         <a
                           href={bap.fileUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-indigo-600 font-semibold hover:underline flex items-center gap-1"
-                        >
-                          📥 Unduh / Buka Dokumen ({bap.fileUrl.endsWith(".pdf") ? "PDF" : "Gambar"})
+                        >{t("📥 Unduh / Buka Dokumen (")}{bap.fileUrl.endsWith(".pdf") ? "PDF" : t("Gambar")})
                         </a>
                       </dd>
                     </div>
@@ -715,8 +687,8 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
               {incidents.length === 0 ? (
                 <div className="py-10 text-center">
                   <div className="text-4xl mb-2"><UiIcon name="check" className="inline-block align-middle" /></div>
-                  <p className="font-semibold text-slate-700">Tidak ada riwayat insiden</p>
-                  <p className="text-xs text-slate-400 mt-1">Perangkat ini belum pernah mengalami kerusakan yang tercatat.</p>
+                  <p className="font-semibold text-slate-700">{t("Tidak ada riwayat insiden")}</p>
+                  <p className="text-xs text-slate-400 mt-1">{t("Perangkat ini belum pernah mengalami kerusakan yang tercatat.")}</p>
                 </div>
               ) : (
                 incidents.map((incident) => {
@@ -742,42 +714,41 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                             </span>
                           ) : isPendingReview ? (
                             <span className="text-xs font-bold px-2 py-0.5 rounded-full border bg-amber-100 text-amber-700 border-amber-200 animate-pulse">
-                              <UiIcon name="clock" className="inline-block align-middle" /> Menunggu Acc Admin
-                            </span>
+                              <UiIcon name="clock" className="inline-block align-middle" />{" "}{t("Menunggu Acc Admin")}</span>
                           ) : (
                             <span className="text-xs font-bold px-2 py-0.5 rounded-full border bg-red-100 text-red-700 border-red-200 animate-pulse">
                               <UiIcon name="clock" className="inline-block align-middle" /> Unresolved
                             </span>
                           )}
                           {isRejected && (
-                            <span className="text-xs text-red-500 font-medium">↩ Pengajuan sebelumnya ditolak</span>
+                            <span className="text-xs text-red-500 font-medium">{t("↩ Pengajuan sebelumnya ditolak")}</span>
                           )}
                           <span className="text-xs font-bold px-2 py-0.5 rounded-full border bg-slate-100 text-slate-700 border-slate-200">
                             {incident.quantity} pcs
                           </span>
-                          <span className="text-xs text-slate-400">Dilaporkan: {formatDate(incident.reportedAt)}</span>
+                          <span className="text-xs text-slate-400">{t("Dilaporkan:")}{" "}{formatDate(incident.reportedAt, locale)}</span>
                           {incident.handledBy && (
-                            <span className="text-xs text-slate-400">· Diselesaikan oleh: {incident.handledBy}</span>
+                            <span className="text-xs text-slate-400">{t("· Diselesaikan oleh:")}{" "}{incident.handledBy}</span>
                           )}
                         </div>
                         <p className="text-sm font-medium text-slate-800">{incident.description}</p>
                         {/* Solusi pending review */}
                         {isPendingReview && incident.pendingSolution && (
                           <div className="mt-2 pt-2 border-t border-amber-200">
-                            <p className="text-xs font-semibold text-amber-700 mb-0.5">Solusi diajukan oleh {incident.proposedBy}:</p>
+                            <p className="text-xs font-semibold text-amber-700 mb-0.5">{t("Solusi diajukan oleh")}{" "}{incident.proposedBy}:</p>
                             <p className="text-sm text-slate-700">{incident.pendingSolution}</p>
                             {incident.pendingAssetStatus && (
-                              <p className="text-xs text-amber-600 mt-0.5">Status diusulkan: <strong>{incident.pendingAssetStatus}</strong></p>
+                              <p className="text-xs text-amber-600 mt-0.5">{t("Status diusulkan:")}{" "}<strong>{incident.pendingAssetStatus}</strong></p>
                             )}
                           </div>
                         )}
                         {/* Solusi final */}
                         {incident.solution && !isPendingReview && (
                           <div className="mt-2 pt-2 border-t border-green-200">
-                            <p className="text-xs font-semibold text-green-700 mb-0.5">Solusi Perbaikan:</p>
+                            <p className="text-xs font-semibold text-green-700 mb-0.5">{t("Solusi Perbaikan:")}</p>
                             <p className="text-sm text-slate-700">{incident.solution}</p>
                             {incident.resolvedAt && (
-                              <p className="text-xs text-slate-400 mt-1">Diselesaikan: {formatDate(incident.resolvedAt)}</p>
+                              <p className="text-xs text-slate-400 mt-1">{t("Diselesaikan:")}{" "}{formatDate(incident.resolvedAt, locale)}</p>
                             )}
                           </div>
                         )}
@@ -788,9 +759,7 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                           <button
                             onClick={() => { setReviewIncident(incident); setReviewError(null); }}
                             className="bg-amber-500 text-white font-semibold px-3 py-1.5 rounded-lg text-xs hover:bg-amber-600 transition"
-                          >
-                            ✓ Acc / Tolak
-                          </button>
+                          >{t("✓ Acc / Tolak")}</button>
                         )}
                         {/* Admin: Selesaikan langsung */}
                         {isAdmin && !incident.resolvedAt && !isPendingReview && (
@@ -801,9 +770,7 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                               setResolveError(null);
                             }}
                             className="bg-green-600 text-white font-semibold px-3 py-1.5 rounded-lg text-xs hover:bg-green-700 transition"
-                          >
-                            ✓ Selesaikan
-                          </button>
+                          >{t("✓ Selesaikan")}</button>
                         )}
                         {/* IT Support / Kitchen: Ajukan Selesai */}
                         {!isAdmin && !incident.resolvedAt && !isPendingReview && (
@@ -814,9 +781,7 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                               setProposeError(null);
                             }}
                             className="bg-indigo-600 text-white font-semibold px-3 py-1.5 rounded-lg text-xs hover:bg-indigo-700 transition"
-                          >
-                            Ajukan Selesai
-                          </button>
+                          >{t("Ajukan Selesai")}</button>
                         )}
                       </div>
                     </div>
@@ -833,8 +798,8 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
               {transfers.length === 0 ? (
                 <div className="py-10 text-center">
                   <div className="text-4xl mb-2"><UiIcon name="pin" className="inline-block align-middle" /></div>
-                  <p className="font-semibold text-slate-700">Belum ada riwayat perpindahan</p>
-                  <p className="text-xs text-slate-400 mt-1">Aset ini belum pernah dipindahkan ke cabang lain.</p>
+                  <p className="font-semibold text-slate-700">{t("Belum ada riwayat perpindahan")}</p>
+                  <p className="text-xs text-slate-400 mt-1">{t("Aset ini belum pernah dipindahkan ke cabang lain.")}</p>
                 </div>
               ) : (
                 <div className="relative">
@@ -858,8 +823,8 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                               <p className="text-sm text-slate-600 mt-1">{transfer.reason}</p>
                             </div>
                             <div className="text-right flex-shrink-0">
-                              <p className="text-xs font-semibold text-slate-500">{formatDate(transfer.transferredAt)}</p>
-                              <p className="text-xs text-slate-400 mt-0.5">oleh {transfer.requestedBy?.name || "-"}</p>
+                              <p className="text-xs font-semibold text-slate-500">{formatDate(transfer.transferredAt, locale)}</p>
+                              <p className="text-xs text-slate-400 mt-0.5">{t("oleh")}{" "}{transfer.requestedBy?.name || "-"}</p>
                             </div>
                           </div>
                         </div>
@@ -875,47 +840,45 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
 
       {/* Modal: Transfer Aset */}
       {showTransferModal && (
-        <Dialog label="Transfer Aset" onClose={() => setShowTransferModal(false)}>
+        <Dialog label={t("Transfer Aset")} onClose={() => setShowTransferModal(false)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="p-6">
-              <h2 className="text-lg font-bold text-slate-900 mb-1">Transfer Aset</h2>
-              <p className="text-sm text-slate-500 mb-5">Pindahkan <strong>{asset.name}</strong> dari <strong>{asset.branch.name}</strong> ke cabang lain.</p>
+              <h2 className="text-lg font-bold text-slate-900 mb-1">{t("Transfer Aset")}</h2>
+              <p className="text-sm text-slate-500 mb-5">{t("Pindahkan")}{" "}<strong>{asset.name}</strong>{" "}{t("dari")}{" "}<strong>{asset.branch.name}</strong>{" "}{t("ke cabang lain.")}</p>
               
               <form onSubmit={handleTransfer} className="space-y-4">
                 {transferError && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{transferError}</div>
+                  <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{t(transferError)}</div>
                 )}
                 <div>
-                  <label htmlFor="assets-id-AssetDetailClient-field-1" className="block text-sm font-semibold text-slate-700 mb-1.5">Cabang Tujuan <span className="text-red-500">*</span></label>
+                  <label htmlFor="assets-id-AssetDetailClient-field-1" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Cabang Tujuan")}{" "}<span className="text-red-500">*</span></label>
                   <select id="assets-id-AssetDetailClient-field-1"
                     value={transferForm.toBranchId}
                     onChange={(e) => setTransferForm((f) => ({ ...f, toBranchId: e.target.value }))}
                     required
                     className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
-                    <option value="">Pilih cabang tujuan...</option>
+                    <option value="">{t("Pilih cabang tujuan...")}</option>
                     {branches.map((b) => (
                       <option key={b.id} value={b.id}>{b.name}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="assets-id-AssetDetailClient-field-2" className="block text-sm font-semibold text-slate-700 mb-1.5">Alasan Transfer <span className="text-red-500">*</span></label>
+                  <label htmlFor="assets-id-AssetDetailClient-field-2" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Alasan Transfer")}{" "}<span className="text-red-500">*</span></label>
                   <textarea id="assets-id-AssetDetailClient-field-2"
                     value={transferForm.reason}
                     onChange={(e) => setTransferForm((f) => ({ ...f, reason: e.target.value }))}
                     required
                     rows={3}
-                    placeholder="Contoh: Mutasi operasional, pengiriman untuk perbaikan, dll."
+                    placeholder={t("Contoh: Mutasi operasional, pengiriman untuk perbaikan, dll.")}
                     className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400 resize-none"
                   />
                 </div>
                 <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={() => setShowTransferModal(false)} className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition">
-                    Batal
-                  </button>
+                  <button type="button" onClick={() => setShowTransferModal(false)} className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition">{t("Batal")}</button>
                   <button type="submit" disabled={transferLoading} className="flex-1 bg-blue-600 text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-blue-700 transition disabled:opacity-60">
-                    {transferLoading ? "Memproses..." : "Transfer"}
+                    {transferLoading ? t("Memproses...") : "Transfer"}
                   </button>
                 </div>
               </form>
@@ -926,19 +889,18 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
 
       {/* Modal: Buat Insiden */}
       {showIncidentModal && (
-        <Dialog label="Buat Tiket Insiden" onClose={() => setShowIncidentModal(false)}>
+        <Dialog label={t("Buat Tiket Insiden")} onClose={() => setShowIncidentModal(false)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="p-6">
-              <h2 className="text-lg font-bold text-slate-900 mb-1">Buat Tiket Insiden</h2>
-              <p className="text-sm text-slate-500 mb-5">Laporkan kerusakan atau masalah pada <strong>{asset.name}</strong>.</p>
+              <h2 className="text-lg font-bold text-slate-900 mb-1">{t("Buat Tiket Insiden")}</h2>
+              <p className="text-sm text-slate-500 mb-5">{t("Laporkan kerusakan atau masalah pada")}{" "}<strong>{asset.name}</strong>.</p>
 
               <form onSubmit={handleCreateIncident} className="space-y-4">
                 {incidentError && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{incidentError}</div>
+                  <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{t(incidentError)}</div>
                 )}
                 <div>
-                  <label htmlFor="assets-id-AssetDetailClient-field-3" className="block text-sm font-semibold text-slate-700 mb-1.5">
-                    Jumlah Unit yang Rusak (pcs) <span className="text-red-500">*</span>
+                  <label htmlFor="assets-id-AssetDetailClient-field-3" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Jumlah Unit yang Rusak (pcs)")}{" "}<span className="text-red-500">*</span>
                   </label>
                   <input id="assets-id-AssetDetailClient-field-3"
                     type="number"
@@ -949,31 +911,25 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                     required
                     className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                   />
-                  <p className="text-xs text-slate-400 mt-1">
-                    Stok siap pakai saat ini: <strong className="text-slate-600">{asset.activeQty} pcs</strong> dari total {asset.quantity} pcs.
+                  <p className="text-xs text-slate-400 mt-1">{t("Stok siap pakai saat ini:")}{" "}<strong className="text-slate-600">{asset.activeQty} pcs</strong>{" "}{t("dari total")}{" "}{asset.quantity} pcs.
                   </p>
                 </div>
                 <div>
-                  <label htmlFor="assets-id-AssetDetailClient-field-4" className="block text-sm font-semibold text-slate-700 mb-1.5">Deskripsi Masalah / Gejala <span className="text-red-500">*</span></label>
+                  <label htmlFor="assets-id-AssetDetailClient-field-4" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Deskripsi Masalah / Gejala")}{" "}<span className="text-red-500">*</span></label>
                   <textarea id="assets-id-AssetDetailClient-field-4"
                     value={incidentForm.description}
                     onChange={(e) => setIncidentForm((f) => ({ ...f, description: e.target.value }))}
                     required
                     rows={4}
-                    placeholder="Jelaskan gejala kerusakan secara detail..."
+                    placeholder={t("Jelaskan gejala kerusakan secara detail...")}
                     className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400 resize-none"
                   />
-                  <p className="text-xs text-slate-400 mt-1">
-                    Unit yang dilaporkan berpindah ke stok Rusak. Selama masih ada stok siap
-                    pakai, aset tetap berstatus Aktif dengan jumlah berkurang.
-                  </p>
+                  <p className="text-xs text-slate-400 mt-1">{t("Unit yang dilaporkan berpindah ke stok Rusak. Selama masih ada stok siap pakai, aset tetap berstatus Aktif dengan jumlah berkurang.")}</p>
                 </div>
                 <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={() => setShowIncidentModal(false)} className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition">
-                    Batal
-                  </button>
+                  <button type="button" onClick={() => setShowIncidentModal(false)} className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition">{t("Batal")}</button>
                   <button type="submit" disabled={incidentLoading} className="flex-1 bg-red-600 text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-red-700 transition disabled:opacity-60">
-                    {incidentLoading ? "Menyimpan..." : "Buat Tiket"}
+                    {incidentLoading ? t("Menyimpan...") : t("Buat Tiket")}
                   </button>
                 </div>
               </form>
@@ -984,45 +940,43 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
 
       {/* Modal: Selesaikan Insiden */}
       {resolveIncidentId && (
-        <Dialog label="Selesaikan Insiden" onClose={() => setResolveIncidentId(null)}>
+        <Dialog label={t("Selesaikan Insiden")} onClose={() => setResolveIncidentId(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="p-6">
-              <h2 className="text-lg font-bold text-slate-900 mb-1">Selesaikan Insiden</h2>
-              <p className="text-sm text-slate-500 mb-5">Isi solusi perbaikan dan perbarui status aset.</p>
+              <h2 className="text-lg font-bold text-slate-900 mb-1">{t("Selesaikan Insiden")}</h2>
+              <p className="text-sm text-slate-500 mb-5">{t("Isi solusi perbaikan dan perbarui status aset.")}</p>
 
               <form onSubmit={handleResolveIncident} className="space-y-4">
                 {resolveError && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{resolveError}</div>
+                  <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{t(resolveError)}</div>
                 )}
                 <div>
-                  <label htmlFor="assets-id-AssetDetailClient-field-5" className="block text-sm font-semibold text-slate-700 mb-1.5">Solusi Perbaikan <span className="text-red-500">*</span></label>
+                  <label htmlFor="assets-id-AssetDetailClient-field-5" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Solusi Perbaikan")}{" "}<span className="text-red-500">*</span></label>
                   <textarea id="assets-id-AssetDetailClient-field-5"
                     value={resolveForm.solution}
                     onChange={(e) => setResolveForm((f) => ({ ...f, solution: e.target.value }))}
                     required
                     rows={4}
-                    placeholder="Jelaskan solusi yang dilakukan untuk memperbaiki masalah..."
+                    placeholder={t("Jelaskan solusi yang dilakukan untuk memperbaiki masalah...")}
                     className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400 resize-none"
                   />
                 </div>
                 <div>
-                  <label htmlFor="assets-id-AssetDetailClient-field-6" className="block text-sm font-semibold text-slate-700 mb-1.5">Update Status Aset</label>
+                  <label htmlFor="assets-id-AssetDetailClient-field-6" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Update Status Aset")}</label>
                   <select id="assets-id-AssetDetailClient-field-6"
                     value={resolveForm.assetStatus}
                     onChange={(e) => setResolveForm((f) => ({ ...f, assetStatus: e.target.value }))}
                     className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
                     {INCIDENT_RESOLVE_STATUSES.map((s) => (
-                      <option key={s.value} value={s.value}>{s.label}</option>
+                      <option key={s.value} value={s.value}>{t(s.label)}</option>
                     ))}
                   </select>
                 </div>
                 <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={() => setResolveIncidentId(null)} className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition">
-                    Batal
-                  </button>
+                  <button type="button" onClick={() => setResolveIncidentId(null)} className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition">{t("Batal")}</button>
                   <button type="submit" disabled={resolveLoading} className="flex-1 bg-green-600 text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-green-700 transition disabled:opacity-60">
-                    {resolveLoading ? "Menyimpan..." : "✓ Selesaikan Insiden"}
+                    {resolveLoading ? t("Menyimpan...") : t("✓ Selesaikan Insiden")}
                   </button>
                 </div>
               </form>
@@ -1032,46 +986,42 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
       )}
       {/* Modal: Ajukan Selesai (IT Support) */}
       {proposeIncidentId && (
-        <Dialog label="Ajukan Penyelesaian Insiden" onClose={() => setProposeIncidentId(null)}>
+        <Dialog label={t("Ajukan Penyelesaian Insiden")} onClose={() => setProposeIncidentId(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="p-6">
-              <h2 className="text-lg font-bold text-slate-900 mb-1">Ajukan Penyelesaian Insiden</h2>
-              <p className="text-sm text-slate-500 mb-5">Isi solusi dan status perangkat. Pengajuan akan menunggu persetujuan Admin.</p>
+              <h2 className="text-lg font-bold text-slate-900 mb-1">{t("Ajukan Penyelesaian Insiden")}</h2>
+              <p className="text-sm text-slate-500 mb-5">{t("Isi solusi dan status perangkat. Pengajuan akan menunggu persetujuan Admin.")}</p>
               <form onSubmit={handleProposeIncident} className="space-y-4">
                 {proposeError && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{proposeError}</div>
+                  <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{t(proposeError)}</div>
                 )}
                 <div>
-                  <label htmlFor="assets-id-AssetDetailClient-field-7" className="block text-sm font-semibold text-slate-700 mb-1.5">Solusi / Tindakan yang Dilakukan <span className="text-red-500">*</span></label>
+                  <label htmlFor="assets-id-AssetDetailClient-field-7" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Solusi / Tindakan yang Dilakukan")}{" "}<span className="text-red-500">*</span></label>
                   <textarea id="assets-id-AssetDetailClient-field-7"
                     value={proposeForm.solution}
                     onChange={(e) => setProposeForm((f) => ({ ...f, solution: e.target.value }))}
                     required rows={4}
-                    placeholder="Jelaskan tindakan perbaikan yang sudah dilakukan..."
+                    placeholder={t("Jelaskan tindakan perbaikan yang sudah dilakukan...")}
                     className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400 resize-none"
                   />
                 </div>
                 <div>
-                  <label htmlFor="assets-id-AssetDetailClient-field-8" className="block text-sm font-semibold text-slate-700 mb-1.5">Status Perangkat yang Diusulkan</label>
+                  <label htmlFor="assets-id-AssetDetailClient-field-8" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Status Perangkat yang Diusulkan")}</label>
                   <select id="assets-id-AssetDetailClient-field-8"
                     value={proposeForm.assetStatus}
                     onChange={(e) => setProposeForm((f) => ({ ...f, assetStatus: e.target.value }))}
                     className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
                     {INCIDENT_RESOLVE_STATUSES.map((s) => (
-                      <option key={s.value} value={s.value}>{s.label}</option>
+                      <option key={s.value} value={s.value}>{t(s.label)}</option>
                     ))}
                   </select>
                 </div>
-                <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 text-xs text-amber-700">
-                  ℹ️ Pengajuan ini akan dikirim ke Admin dan menunggu persetujuan sebelum insiden resmi ditandai selesai.
-                </div>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 text-xs text-amber-700">{t("ℹ️ Pengajuan ini akan dikirim ke Admin dan menunggu persetujuan sebelum insiden resmi ditandai selesai.")}</div>
                 <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={() => setProposeIncidentId(null)} className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition">
-                    Batal
-                  </button>
+                  <button type="button" onClick={() => setProposeIncidentId(null)} className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition">{t("Batal")}</button>
                   <button type="submit" disabled={proposeLoading} className="flex-1 bg-indigo-600 text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-indigo-700 transition disabled:opacity-60">
-                    {proposeLoading ? "Mengirim..." : "Kirim Pengajuan"}
+                    {proposeLoading ? t("Mengirim...") : t("Kirim Pengajuan")}
                   </button>
                 </div>
               </form>
@@ -1082,30 +1032,29 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
 
       {/* Modal: Review Acc / Tolak (Admin) */}
       {reviewIncident && (
-        <Dialog label="Review Pengajuan Penyelesaian" onClose={() => setReviewIncident(null)}>
+        <Dialog label={t("Review Pengajuan Penyelesaian")} onClose={() => setReviewIncident(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="p-6">
-              <h2 className="text-lg font-bold text-slate-900 mb-1">Review Pengajuan Penyelesaian</h2>
-              <p className="text-sm text-slate-500 mb-4">Periksa solusi yang diajukan dan putuskan untuk menyetujui atau menolak.</p>
+              <h2 className="text-lg font-bold text-slate-900 mb-1">{t("Review Pengajuan Penyelesaian")}</h2>
+              <p className="text-sm text-slate-500 mb-4">{t("Periksa solusi yang diajukan dan putuskan untuk menyetujui atau menolak.")}</p>
 
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4 space-y-3">
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Masalah</p>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{t("Masalah")}</p>
                   <p className="text-sm text-slate-700">{reviewIncident.description}</p>
                 </div>
                 <div className="border-t border-slate-200 pt-3">
-                  <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-1">
-                    Solusi Diajukan oleh {reviewIncident.proposedBy}
+                  <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-1">{t("Solusi Diajukan oleh")}{" "}{reviewIncident.proposedBy}
                     {reviewIncident.proposedAt && (
                       <span className="text-slate-400 normal-case font-normal ml-1">
-                        · {new Date(reviewIncident.proposedAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Jakarta" })}
+                        · {formatDate(reviewIncident.proposedAt, locale)}
                       </span>
                     )}
                   </p>
                   <p className="text-sm text-slate-800 font-medium">{reviewIncident.pendingSolution}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Status Perangkat Diusulkan</p>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{t("Status Perangkat Diusulkan")}</p>
                   <span className="text-xs font-bold bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">
                     {reviewIncident.pendingAssetStatus || "ACTIVE"}
                   </span>
@@ -1113,29 +1062,27 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
               </div>
 
               {reviewError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm mb-4">{reviewError}</div>
+                <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm mb-4">{t(reviewError)}</div>
               )}
 
               <div className="flex gap-3">
                 <button
                   onClick={() => setReviewIncident(null)}
                   className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition"
-                >
-                  Tutup
-                </button>
+                >{t("Tutup")}</button>
                 <button
                   onClick={handleRejectIncident}
                   disabled={reviewLoading}
                   className="flex-1 bg-red-600 text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-red-700 transition disabled:opacity-60"
                 >
-                  {reviewLoading ? "Proses..." : "✗ Tolak"}
+                  {reviewLoading ? t("Proses...") : t("✗ Tolak")}
                 </button>
                 <button
                   onClick={handleApproveIncident}
                   disabled={reviewLoading}
                   className="flex-1 bg-green-600 text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-green-700 transition disabled:opacity-60"
                 >
-                  {reviewLoading ? "Proses..." : "✓ Acc"}
+                  {reviewLoading ? t("Proses...") : t("✓ Acc")}
                 </button>
               </div>
             </div>
@@ -1145,23 +1092,21 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
 
       {/* Modal: Ajukan BAP */}
       {showBapModal && (
-        <Dialog label="Ajukan Penghapusan Aset (BAP)" onClose={() => setShowBapModal(false)}>
+        <Dialog label={t("Ajukan Penghapusan Aset (BAP)")} onClose={() => setShowBapModal(false)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="p-6">
-              <h2 className="text-lg font-bold text-slate-900 mb-1">Ajukan Penghapusan Aset (BAP)</h2>
-              <p className="text-sm text-slate-500 mb-5">
-                Ajukan dokumen BAP untuk menghapus sebagian atau seluruh stok aset <strong>{asset.name}</strong>.
+              <h2 className="text-lg font-bold text-slate-900 mb-1">{t("Ajukan Penghapusan Aset (BAP)")}</h2>
+              <p className="text-sm text-slate-500 mb-5">{t("Ajukan dokumen BAP untuk menghapus sebagian atau seluruh stok aset")}{" "}<strong>{asset.name}</strong>.
               </p>
 
               <form onSubmit={handleBap} className="space-y-4">
                 {bapError && (
                   <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">
-                    {bapError}
+                    {t(bapError)}
                   </div>
                 )}
                 <div>
-                  <label htmlFor="assets-id-AssetDetailClient-field-9" className="block text-sm font-semibold text-slate-700 mb-1.5">
-                    File BAP (PDF / Gambar) <span className="text-red-500">*</span>
+                  <label htmlFor="assets-id-AssetDetailClient-field-9" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("File BAP (PDF / Gambar)")}{" "}<span className="text-red-500">*</span>
                   </label>
                   <input id="assets-id-AssetDetailClient-field-9"
                     type="file"
@@ -1170,13 +1115,10 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                     required
                     className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
                   />
-                  <p className="text-xs text-slate-400 mt-1">
-                    Format: PDF (max 5MB) atau Gambar (PNG, JPEG, WebP yang akan dikompres).
-                  </p>
+                  <p className="text-xs text-slate-400 mt-1">{t("Format: PDF (max 5MB) atau Gambar (PNG, JPEG, WebP yang akan dikompres).")}</p>
                 </div>
                 <div>
-                  <label htmlFor="assets-id-AssetDetailClient-field-10" className="block text-sm font-semibold text-slate-700 mb-1.5">
-                    Diambil dari Stok <span className="text-red-500">*</span>
+                  <label htmlFor="assets-id-AssetDetailClient-field-10" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Diambil dari Stok")}{" "}<span className="text-red-500">*</span>
                   </label>
                   <select id="assets-id-AssetDetailClient-field-10"
                     value={bapForm.sourceCondition}
@@ -1188,18 +1130,14 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                   >
                     {STOCK_CONDITIONS.map((c) => (
                       <option key={c} value={c} disabled={stockByCondition[c] <= 0}>
-                        {STOCK_CONDITION_LABELS[c]} ({stockByCondition[c]} pcs)
+                        {t(STOCK_CONDITION_LABELS[c])} ({stockByCondition[c]} pcs)
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Contoh: unit yang <em>hilang</em> diambil dari stok Aktif, unit yang
-                    sudah rusak permanen dari stok Rusak.
-                  </p>
+                  <p className="text-xs text-slate-400 mt-1">{t("Contoh: unit yang")}{" "}<em>{t("hilang")}</em>{" "}{t("diambil dari stok Aktif, unit yang sudah rusak permanen dari stok Rusak.")}</p>
                 </div>
                 <div>
-                  <label htmlFor="assets-id-AssetDetailClient-field-11" className="block text-sm font-semibold text-slate-700 mb-1.5">
-                    Jumlah yang Dihapus (pcs) <span className="text-red-500">*</span>
+                  <label htmlFor="assets-id-AssetDetailClient-field-11" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Jumlah yang Dihapus (pcs)")}{" "}<span className="text-red-500">*</span>
                   </label>
                   <input id="assets-id-AssetDetailClient-field-11"
                     type="number"
@@ -1210,23 +1148,18 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                     required
                     className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                   />
-                  <p className="text-xs text-slate-400 mt-1">
-                    Tersedia {bapMaxQty} pcs pada stok {STOCK_CONDITION_LABELS[bapSource]}.
-                    Sisa stok lain tetap dapat dipakai selama pengajuan menunggu persetujuan.
-                  </p>
+                  <p className="text-xs text-slate-400 mt-1">{t("Tersedia")}{" "}{bapMaxQty}{" "}{t("pcs pada stok")}{" "}{t(STOCK_CONDITION_LABELS[bapSource])}{t(". Sisa stok lain tetap dapat dipakai selama pengajuan menunggu persetujuan.")}</p>
                   {bapMaxQty <= 0 && (
-                    <p className="text-red-500 text-xs mt-1">
-                      Tidak ada stok pada kondisi ini — pilih kondisi lain.
-                    </p>
+                    <p className="text-red-500 text-xs mt-1">{t("Tidak ada stok pada kondisi ini — pilih kondisi lain.")}</p>
                   )}
                 </div>
                 <div>
-                  <label htmlFor="assets-id-AssetDetailClient-field-12" className="block text-sm font-semibold text-slate-700 mb-1.5">Catatan / Alasan</label>
+                  <label htmlFor="assets-id-AssetDetailClient-field-12" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Catatan / Alasan")}</label>
                   <textarea id="assets-id-AssetDetailClient-field-12"
                     value={bapForm.notes}
                     onChange={(e) => setBapForm((f) => ({ ...f, notes: e.target.value }))}
                     rows={3}
-                    placeholder="Alasan penghapusan atau catatan lainnya..."
+                    placeholder={t("Alasan penghapusan atau catatan lainnya...")}
                     className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400 resize-none"
                   />
                 </div>
@@ -1235,15 +1168,13 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
                     type="button"
                     onClick={() => setShowBapModal(false)}
                     className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition"
-                  >
-                    Batal
-                  </button>
+                  >{t("Batal")}</button>
                   <button
                     type="submit"
                     disabled={bapLoading || bapMaxQty <= 0}
                     className="flex-1 bg-slate-900 text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {bapLoading ? "Mengajukan..." : "Ajukan"}
+                    {bapLoading ? t("Mengajukan...") : t("Ajukan")}
                   </button>
                 </div>
               </form>
@@ -1254,33 +1185,29 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
 
       {/* Dialog: Tolak BAP dengan Catatan */}
       {showRejectBapDialog && (
-        <Dialog label="Tolak Pengajuan BAP?" onClose={() => setShowRejectBapDialog(false)}>
+        <Dialog label={t("Tolak Pengajuan BAP?")} onClose={() => setShowRejectBapDialog(false)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-            <h2 className="text-lg font-bold text-slate-900 mb-1">Tolak Pengajuan BAP?</h2>
-            <p className="text-sm text-slate-500 mb-4">
-              Silakan masukkan alasan penolakan BAP ini.
-            </p>
+            <h2 className="text-lg font-bold text-slate-900 mb-1">{t("Tolak Pengajuan BAP?")}</h2>
+            <p className="text-sm text-slate-500 mb-4">{t("Silakan masukkan alasan penolakan BAP ini.")}</p>
             <div className="space-y-4">
               <textarea
                 value={bapRejectNotes}
                 onChange={(e) => setBapRejectNotes(e.target.value)}
                 rows={3}
-                placeholder="Alasan penolakan..."
+                placeholder={t("Alasan penolakan...")}
                 className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
               />
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowRejectBapDialog(false)}
                   className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition"
-                >
-                  Batal
-                </button>
+                >{t("Batal")}</button>
                 <button
                   onClick={() => handleRejectBap(bapRejectNotes)}
                   disabled={actionLoading}
                   className="flex-1 bg-red-600 text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-red-700 transition disabled:opacity-60"
                 >
-                  {actionLoading ? "Proses..." : "✗ Tolak"}
+                  {actionLoading ? t("Proses...") : t("✗ Tolak")}
                 </button>
               </div>
             </div>
@@ -1292,9 +1219,10 @@ export default function AssetDetailClient({ asset, incidents, transfers, branche
 }
 
 function InfoRow({ label, value, mono }: { label: string; value: React.ReactNode; mono?: boolean }) {
+  const { t } = useI18n();
   return (
     <div>
-      <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{label}</dt>
+      <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{t(label)}</dt>
       <dd className={`text-sm text-slate-800 ${mono ? "font-mono" : ""}`}>{value}</dd>
     </div>
   );

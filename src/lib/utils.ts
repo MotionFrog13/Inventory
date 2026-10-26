@@ -1,13 +1,14 @@
 import { STOCK_CONDITIONS } from "./stock";
+import { intlLocale, translate, type Locale } from "./i18n";
 
 /**
  * Format a UTC date to WIB (UTC+7) date string
  * Example: "20 Jun 2026"
  */
-export function formatDate(date: Date | string | null): string {
+export function formatDate(date: Date | string | null, locale: Locale = "en"): string {
   if (!date) return "-";
   const d = new Date(date);
-  return d.toLocaleDateString("id-ID", {
+  return d.toLocaleDateString(intlLocale(locale), {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -19,10 +20,10 @@ export function formatDate(date: Date | string | null): string {
  * Format a UTC date to WIB (UTC+7) datetime string
  * Example: "20 Jun 2026, 14:30 WIB"
  */
-export function formatDateTime(date: Date | string | null): string {
+export function formatDateTime(date: Date | string | null, locale: Locale = "en"): string {
   if (!date) return "-";
   const d = new Date(date);
-  const formatted = d.toLocaleDateString("id-ID", {
+  const formatted = d.toLocaleDateString(intlLocale(locale), {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -217,13 +218,13 @@ export const ROLE_TIER_LABELS: Record<RoleTier, string> = {
  * Label peran lengkap: "Super Admin", "Admin Kitchen", "Staf Engineering".
  * Akun yang belum punya divisi tampil generik.
  */
-export function roleLabel(role: string, divisionName?: string | null): string {
+export function roleLabel(role: string, divisionName?: string | null, locale: Locale = "id"): string {
   if (role === "SUPER_ADMIN") return ROLE_TIER_LABELS.SUPER_ADMIN;
   if (role === "DIVISION_ADMIN") {
-    return divisionName ? `Admin ${divisionName}` : ROLE_TIER_LABELS.DIVISION_ADMIN;
+    return divisionName ? (locale === "en" ? `${divisionName} Admin` : `Admin ${divisionName}`) : translate(ROLE_TIER_LABELS.DIVISION_ADMIN, locale);
   }
   if (role === "DIVISION_STAFF") {
-    return divisionName ? `Staf ${divisionName}` : ROLE_TIER_LABELS.DIVISION_STAFF;
+    return divisionName ? (locale === "en" ? `${divisionName} Staff` : `Staf ${divisionName}`) : translate(ROLE_TIER_LABELS.DIVISION_STAFF, locale);
   }
   return role;
 }
@@ -286,8 +287,8 @@ export interface SessionUserView {
 }
 
 /** "Kitchen", atau "Semua Divisi" untuk SUPER_ADMIN. */
-export function divisionScopeLabel(user: { division: { name: string } | null }): string {
-  return user.division?.name ?? "Semua Divisi";
+export function divisionScopeLabel(user: { division: { name: string } | null }, locale: Locale = "id"): string {
+  return user.division?.name ?? translate("Semua Divisi", locale);
 }
 
 /**
@@ -298,8 +299,8 @@ export function branchScopeLabel(user: {
   role: string;
   branches: { name: string }[];
   organization: { name: string };
-}): string {
-  if (isSuperAdmin(user.role)) return `seluruh cabang ${user.organization.name}`;
+}, locale: Locale = "id"): string {
+  if (isSuperAdmin(user.role)) return translate("seluruh cabang {0}", locale, [user.organization.name]);
   if (user.branches.length === 1) return `outlet ${user.branches[0].name}`;
-  return `${user.branches.length} outlet (${user.branches.map((b) => b.name).join(", ")})`;
+  return translate("{0} outlet ({1})", locale, [user.branches.length, user.branches.map((b) => b.name).join(", ")]);
 }

@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/components/LanguageProvider";
+import { formatDate } from "@/lib/utils";
 import UiIcon from "@/components/UiIcon";
 import PageHeading from "@/components/PageHeading";
 import GuideCard from "@/components/GuideCard";
@@ -53,12 +55,7 @@ interface Asset {
   branch: { name: string };
 }
 
-function formatDate(d: string): string {
-  return new Date(d).toLocaleDateString("id-ID", {
-    day: "numeric", month: "short", year: "numeric",
-    timeZone: "Asia/Jakarta",
-  });
-}
+
 
 function daysAgo(d: string): number {
   return Math.floor((Date.now() - new Date(d).getTime()) / (1000 * 60 * 60 * 24));
@@ -69,6 +66,7 @@ function daysAgo(d: string): number {
 const ASSET_STATUS_OPTIONS = INCIDENT_RESOLVE_STATUSES;
 
 export default function IncidentsPage() {
+  const { t, locale } = useI18n();
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -337,41 +335,37 @@ export default function IncidentsPage() {
   const pendingReviewCount = incidents.filter((i) => i.resolveStatus === "PENDING_REVIEW").length;
 
   const currentSubtitle = me
-    ? `Kelola tiket kerusakan aset ${divisionScopeLabel(me)} di ${branchScopeLabel(me)}.`
-    : "Kelola tiket kerusakan aset.";
+    ? t("Kelola tiket kerusakan aset {0} di {1}.", [divisionScopeLabel(me, locale), branchScopeLabel(me, locale)])
+    : t("Kelola tiket kerusakan aset.");
 
   const isAdmin = isAdminRole(userRole);
 
   // Badge helper
   function ResolveStatusBadge({ incident }: { incident: Incident }) {
+  const { t } = useI18n();
     if (incident.resolvedAt) {
       return (
-        <span className="text-xs font-bold px-2.5 py-1 rounded-full border bg-green-100 text-green-700 border-green-200 whitespace-nowrap">
-          ✓ Selesai
-        </span>
+        <span className="text-xs font-bold px-2.5 py-1 rounded-full border bg-green-100 text-green-700 border-green-200 whitespace-nowrap">{t("✓ Selesai")}</span>
       );
     }
     if (incident.resolveStatus === "PENDING_REVIEW") {
       return (
         <span className="text-xs font-bold px-2.5 py-1 rounded-full border bg-amber-100 text-amber-700 border-amber-200 whitespace-nowrap animate-pulse">
-          <UiIcon name="clock" className="inline-block align-middle" /> Menunggu Acc
-        </span>
+          <UiIcon name="clock" className="inline-block align-middle" />{" "}{t("Menunggu Acc")}</span>
       );
     }
     if (incident.resolveStatus === "REJECTED") {
       return (
         <div className="flex flex-col gap-0.5">
           <span className="text-xs font-bold px-2.5 py-1 rounded-full border bg-red-100 text-red-700 border-red-200 whitespace-nowrap">
-            <UiIcon name="clock" className="inline-block align-middle" /> Aktif
-          </span>
-          <span className="text-xs text-red-500 font-medium px-1">↩ Pengajuan ditolak</span>
+            <UiIcon name="clock" className="inline-block align-middle" />{" "}{t("Aktif")}</span>
+          <span className="text-xs text-red-500 font-medium px-1">{t("↩ Pengajuan ditolak")}</span>
         </div>
       );
     }
     return (
       <span className="text-xs font-bold px-2.5 py-1 rounded-full border bg-red-100 text-red-700 border-red-200 whitespace-nowrap">
-        <UiIcon name="clock" className="inline-block align-middle" /> Aktif
-      </span>
+        <UiIcon name="clock" className="inline-block align-middle" />{" "}{t("Aktif")}</span>
     );
   }
 
@@ -379,7 +373,7 @@ export default function IncidentsPage() {
     <div className="space-y-5 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <PageHeading eyebrow="Inventaris & operasional" title={<>Daftar Insiden</>} description={<>{currentSubtitle}</>} />
+        <PageHeading eyebrow={t("Inventaris & operasional")} title={<>{t("Daftar Insiden")}</>} description={<>{currentSubtitle}</>} />
         <button
           onClick={() => {
             setShowCreateModal(true);
@@ -390,19 +384,18 @@ export default function IncidentsPage() {
           }}
           className="bg-red-600 text-white font-semibold px-4 py-2.5 rounded-xl text-sm hover:bg-red-700 transition shadow-sm flex items-center gap-2"
         >
-          <UiIcon name="tool" className="inline-block align-middle" /> Buat Tiket Baru
-        </button>
+          <UiIcon name="tool" className="inline-block align-middle" />{" "}{t("Buat Tiket Baru")}</button>
       </div>
-      <GuideCard title="Dari laporan hingga selesai" icon="tool">Laporkan aset yang bermasalah, lalu ajukan solusi setelah perbaikan. Pengajuan penyelesaian diperiksa oleh admin divisi atau Super Admin.</GuideCard>
+      <GuideCard title={t("Dari laporan hingga selesai")} icon="tool">{t("Laporkan aset yang bermasalah, lalu ajukan solusi setelah perbaikan. Pengajuan penyelesaian diperiksa oleh admin divisi atau Super Admin.")}</GuideCard>
 
 
       {/* Filter Tabs */}
       <div className="ui-panel flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1.5 w-fit shadow-xs flex-wrap">
         {([
-          { key: "", label: "Semua" },
-          { key: "unresolved", label: "Aktif (Unresolved)" },
-          { key: "pending_review", label: "Menunggu Acc" },
-          { key: "resolved", label: "Selesai (Resolved)" },
+          { key: "", label: t("Semua") },
+          { key: "unresolved", label: t("Aktif (Unresolved)") },
+          { key: "pending_review", label: t("Menunggu Acc") },
+          { key: "resolved", label: t("Selesai (Resolved)") },
         ] as { key: "" | "unresolved" | "resolved" | "pending_review"; label: string }[]).map((f) => (
           <button
             key={f.key}
@@ -413,7 +406,7 @@ export default function IncidentsPage() {
                 : "text-slate-600 hover:bg-slate-100"
             }`}
           >
-            {f.label}
+            {t(f.label)}
             {f.key === "pending_review" && statusFilter === "pending_review" && pendingReviewCount > 0 && (
               <span className="ml-1.5 bg-amber-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
                 {pendingReviewCount}
@@ -424,13 +417,12 @@ export default function IncidentsPage() {
       </div>
 
       {/* Stats */}
-      <div className="text-sm text-slate-500">
-        Menampilkan <strong className="text-slate-700">{incidents.length}</strong> dari <strong className="text-slate-700">{total}</strong> insiden
+      <div className="text-sm text-slate-500">{t("Menampilkan")}{" "}<strong className="text-slate-700">{incidents.length}</strong>{" "}{t("dari")}{" "}<strong className="text-slate-700">{total}</strong> insiden
         {statusFilter === "" && unresolvedCount > 0 && (
-          <span className="ml-2 text-rose-600 font-semibold">· {unresolvedCount} masih aktif di halaman ini</span>
+          <span className="ml-2 text-rose-600 font-semibold">· {unresolvedCount}{" "}{t("masih aktif di halaman ini")}</span>
         )}
         {isAdmin && statusFilter !== "pending_review" && pendingReviewCount > 0 && (
-          <span className="ml-2 text-amber-600 font-semibold">· {pendingReviewCount} menunggu persetujuan di halaman ini</span>
+          <span className="ml-2 text-amber-600 font-semibold">· {pendingReviewCount}{" "}{t("menunggu persetujuan di halaman ini")}</span>
         )}
       </div>
 
@@ -443,11 +435,11 @@ export default function IncidentsPage() {
         ) : incidents.length === 0 ? (
           <div className="py-16 text-center">
             <div className="text-5xl mb-3"><UiIcon size={40} name="check" className="inline-block align-middle" /></div>
-            <p className="font-semibold text-slate-700">Tidak ada insiden ditemukan</p>
+            <p className="font-semibold text-slate-700">{t("Tidak ada insiden ditemukan")}</p>
             <p className="text-xs text-slate-400 mt-1">
-              {statusFilter === "unresolved" ? "Semua tiket sudah diselesaikan." :
-               statusFilter === "pending_review" ? "Tidak ada pengajuan yang menunggu persetujuan." :
-               "Belum ada tiket insiden yang tercatat."}
+              {statusFilter === "unresolved" ? t("Semua tiket sudah diselesaikan.") :
+               statusFilter === "pending_review" ? t("Tidak ada pengajuan yang menunggu persetujuan.") :
+               t("Belum ada tiket insiden yang tercatat.")}
             </p>
           </div>
         ) : (
@@ -456,13 +448,13 @@ export default function IncidentsPage() {
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
                   <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Perangkat</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Jumlah</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Cabang</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Masalah / Solusi</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Dilaporkan</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Durasi</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Aksi</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("Perangkat")}</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("Jumlah")}</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("Cabang")}</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("Masalah / Solusi")}</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("Dilaporkan")}</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("Durasi")}</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">{t("Aksi")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -490,8 +482,7 @@ export default function IncidentsPage() {
                         <span className="text-xs font-bold px-2 py-0.5 rounded-full border bg-rose-50 text-rose-700 border-rose-200/60">
                           {incident.quantity} pcs
                         </span>
-                        <p className="text-xs text-slate-400 mt-0.5">
-                          dari {incident.asset.quantity} pcs
+                        <p className="text-xs text-slate-400 mt-0.5">{t("dari")}{" "}{incident.asset.quantity} pcs
                         </p>
                       </td>
                       <td className="px-4 py-3 text-slate-600">{incident.asset.branch.name}</td>
@@ -500,10 +491,10 @@ export default function IncidentsPage() {
                         {/* Tampilkan solusi pending untuk Admin */}
                         {isPendingReview && incident.pendingSolution && (
                           <div className="mt-1.5 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
-                            <p className="text-xs font-semibold text-amber-700 mb-0.5">Solusi diajukan oleh {incident.proposedBy}:</p>
+                            <p className="text-xs font-semibold text-amber-700 mb-0.5">{t("Solusi diajukan oleh")}{" "}{incident.proposedBy}:</p>
                             <p className="text-xs text-amber-900">{incident.pendingSolution}</p>
                             {incident.pendingAssetStatus && (
-                              <p className="text-xs text-amber-600 mt-0.5">Status diusulkan: <strong>{incident.pendingAssetStatus}</strong></p>
+                              <p className="text-xs text-amber-600 mt-0.5">{t("Status diusulkan:")}{" "}<strong>{incident.pendingAssetStatus}</strong></p>
                             )}
                           </div>
                         )}
@@ -512,19 +503,19 @@ export default function IncidentsPage() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
-                        {formatDate(incident.reportedAt)}
-                        {incident.handledBy && <p className="text-xs text-slate-400">oleh {incident.handledBy}</p>}
+                        {formatDate(incident.reportedAt, locale)}
+                        {incident.handledBy && <p className="text-xs text-slate-400">{t("oleh")}{" "}{incident.handledBy}</p>}
                       </td>
                       <td className="px-4 py-3">
                         {incident.resolvedAt ? (
                           <span className="text-xs text-slate-400">
-                            {daysAgo(incident.reportedAt) > 0 ? `${daysAgo(incident.reportedAt)}h` : "< 1h"}
+                            {daysAgo(incident.reportedAt) > 0 ? t("{0}h", [daysAgo(incident.reportedAt)]) : t("< 1h")}
                           </span>
                         ) : (
                           <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
                             isOverdue ? "bg-amber-100 text-amber-800 border-amber-200" : "bg-slate-100 text-slate-600 border-slate-200"
                           }`}>
-                            {days === 0 ? "Hari ini" : `${days} hari`}
+                            {days === 0 ? t("Hari ini") : t("{0} hari", [days])}
                             {isOverdue && " ⚠"}
                           </span>
                         )}
@@ -537,9 +528,7 @@ export default function IncidentsPage() {
                               <button
                                 onClick={() => { setReviewIncident(incident); setReviewError(null); }}
                                 className="text-xs font-semibold text-white bg-green-600 hover:bg-green-700 px-3 py-1 rounded-lg transition whitespace-nowrap shadow-sm"
-                              >
-                                ✓ Acc / Tolak
-                              </button>
+                              >{t("✓ Acc / Tolak")}</button>
                             </>
                           )}
                           {/* Admin: Selesaikan langsung jika belum resolved dan tidak pending review */}
@@ -547,24 +536,20 @@ export default function IncidentsPage() {
                             <button
                               onClick={() => { setResolveId(incident.id); setResolveForm({ solution: "", assetStatus: "ACTIVE" }); setResolveError(null); }}
                               className="text-xs font-semibold text-green-700 bg-green-50 border border-green-200 hover:bg-green-100 px-2.5 py-1 rounded-lg transition whitespace-nowrap"
-                            >
-                              ✓ Selesaikan
-                            </button>
+                            >{t("✓ Selesaikan")}</button>
                           )}
                           {/* Staf divisi: Ajukan Selesai */}
                           {!isAdmin && !incident.resolvedAt && !isPendingReview && (
                             <button
                               onClick={() => { setProposeId(incident.id); setProposeForm({ solution: "", assetStatus: "ACTIVE" }); setProposeError(null); }}
                               className="text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition whitespace-nowrap"
-                            >
-                              Ajukan Selesai
-                            </button>
+                            >{t("Ajukan Selesai")}</button>
                           )}
                           {/* SUPER_ADMIN: tombol hapus */}
                           {isSuperAdmin(userRole) && (
                             <button
                               onClick={() => { setDeleteId(incident.id); setDeleteError(null); }}
-                              aria-label={`Hapus insiden ${incident.asset.name}`}
+                              aria-label={t("Hapus insiden {0}", [incident.asset.name])}
                               className="text-xs font-semibold text-red-600 hover:text-red-700 px-1.5 py-1 rounded hover:bg-red-50 transition"
                             >
                               <UiIcon name="trash" className="inline-block align-middle" />
@@ -585,9 +570,7 @@ export default function IncidentsPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           {page > 1 && (
-            <button onClick={() => setPage(page - 1)} className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 transition font-medium text-slate-700">
-              ← Sebelumnya
-            </button>
+            <button onClick={() => setPage(page - 1)} className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 transition font-medium text-slate-700">{t("← Sebelumnya")}</button>
           )}
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
             <button key={p} onClick={() => setPage(p)}
@@ -599,9 +582,7 @@ export default function IncidentsPage() {
             </button>
           ))}
           {page < totalPages && (
-            <button onClick={() => setPage(page + 1)} className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 transition font-medium text-slate-700">
-              Berikutnya →
-            </button>
+            <button onClick={() => setPage(page + 1)} className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 transition font-medium text-slate-700">{t("Berikutnya →")}</button>
           )}
         </div>
       )}
@@ -610,22 +591,22 @@ export default function IncidentsPage() {
           MODAL: Buat Tiket
       ═══════════════════════════════════════════════════════ */}
       {showCreateModal && (
-        <Dialog label="Buat Tiket Insiden Baru" onClose={() => setShowCreateModal(false)}>
+        <Dialog label={t("Buat Tiket Insiden Baru")} onClose={() => setShowCreateModal(false)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="p-6">
-              <h2 className="text-lg font-bold text-slate-900 mb-1">Buat Tiket Insiden Baru</h2>
-              <p className="text-sm text-slate-500 mb-5">Laporkan kerusakan atau masalah pada perangkat.</p>
+              <h2 className="text-lg font-bold text-slate-900 mb-1">{t("Buat Tiket Insiden Baru")}</h2>
+              <p className="text-sm text-slate-500 mb-5">{t("Laporkan kerusakan atau masalah pada perangkat.")}</p>
               <form onSubmit={handleCreate} className="space-y-4">
                 {createError && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{createError}</div>
+                  <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{t(createError)}</div>
                 )}
                 <div>
-                  <label htmlFor="incidents-page-field-1" className="block text-sm font-semibold text-slate-700 mb-1.5">Cari Perangkat <span className="text-red-500">*</span></label>
+                  <label htmlFor="incidents-page-field-1" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Cari Perangkat")}{" "}<span className="text-red-500">*</span></label>
                   <input id="incidents-page-field-1"
                     type="text"
                     value={assetSearch}
                     onChange={(e) => setAssetSearch(e.target.value)}
-                    placeholder="Ketik nama perangkat..."
+                    placeholder={t("Ketik nama perangkat...")}
                     className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400 mb-2"
                   />
                   {assetOptions.length > 0 && (
@@ -651,14 +632,12 @@ export default function IncidentsPage() {
                     </div>
                   )}
                   {createForm.assetId && selectedAsset && (
-                    <p className="text-xs text-green-600 font-medium mt-1">
-                      ✓ Dipilih · stok siap pakai {selectedAsset.activeQty} dari {selectedAsset.quantity} pcs
+                    <p className="text-xs text-green-600 font-medium mt-1">{t("✓ Dipilih · stok siap pakai")}{" "}{selectedAsset.activeQty}{" "}{t("dari")}{" "}{selectedAsset.quantity} pcs
                     </p>
                   )}
                 </div>
                 <div>
-                  <label htmlFor="incidents-page-field-2" className="block text-sm font-semibold text-slate-700 mb-1.5">
-                    Jumlah Unit yang Rusak (pcs) <span className="text-red-500">*</span>
+                  <label htmlFor="incidents-page-field-2" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Jumlah Unit yang Rusak (pcs)")}{" "}<span className="text-red-500">*</span>
                   </label>
                   <input id="incidents-page-field-2"
                     type="number"
@@ -674,30 +653,23 @@ export default function IncidentsPage() {
                     required
                     className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                   />
-                  <p className="text-xs text-slate-400 mt-1">
-                    Isi 1 untuk perangkat unit tunggal. Untuk barang massal, isi berapa pcs yang rusak.
-                  </p>
+                  <p className="text-xs text-slate-400 mt-1">{t("Isi 1 untuk perangkat unit tunggal. Untuk barang massal, isi berapa pcs yang rusak.")}</p>
                 </div>
                 <div>
-                  <label htmlFor="incidents-page-field-3" className="block text-sm font-semibold text-slate-700 mb-1.5">Deskripsi Masalah / Gejala <span className="text-red-500">*</span></label>
+                  <label htmlFor="incidents-page-field-3" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Deskripsi Masalah / Gejala")}{" "}<span className="text-red-500">*</span></label>
                   <textarea id="incidents-page-field-3"
                     value={createForm.description}
                     onChange={(e) => setCreateForm((f) => ({ ...f, description: e.target.value }))}
                     required rows={4}
-                    placeholder="Jelaskan gejala kerusakan secara detail..."
+                    placeholder={t("Jelaskan gejala kerusakan secara detail...")}
                     className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400 resize-none"
                   />
-                  <p className="text-xs text-slate-400 mt-1">
-                    Unit yang dilaporkan berpindah ke stok Rusak. Selama masih ada stok siap pakai,
-                    perangkat tetap berstatus Aktif dengan jumlah berkurang.
-                  </p>
+                  <p className="text-xs text-slate-400 mt-1">{t("Unit yang dilaporkan berpindah ke stok Rusak. Selama masih ada stok siap pakai, perangkat tetap berstatus Aktif dengan jumlah berkurang.")}</p>
                 </div>
                 <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition">
-                    Batal
-                  </button>
+                  <button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition">{t("Batal")}</button>
                   <button type="submit" disabled={createLoading || !createForm.assetId} className="flex-1 bg-red-600 text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-red-700 transition disabled:opacity-60">
-                    {createLoading ? "Menyimpan..." : "Buat Tiket"}
+                    {createLoading ? t("Menyimpan...") : t("Buat Tiket")}
                   </button>
                 </div>
               </form>
@@ -710,46 +682,42 @@ export default function IncidentsPage() {
           MODAL: Ajukan Selesai (Staf divisi)
       ═══════════════════════════════════════════════════════ */}
       {proposeId && (
-        <Dialog label="Ajukan Penyelesaian Insiden" onClose={() => setProposeId(null)}>
+        <Dialog label={t("Ajukan Penyelesaian Insiden")} onClose={() => setProposeId(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="p-6">
-              <h2 className="text-lg font-bold text-slate-900 mb-1">Ajukan Penyelesaian Insiden</h2>
-              <p className="text-sm text-slate-500 mb-5">Isi solusi dan status perangkat. Pengajuan akan dikirim ke Admin untuk disetujui.</p>
+              <h2 className="text-lg font-bold text-slate-900 mb-1">{t("Ajukan Penyelesaian Insiden")}</h2>
+              <p className="text-sm text-slate-500 mb-5">{t("Isi solusi dan status perangkat. Pengajuan akan dikirim ke Admin untuk disetujui.")}</p>
               <form onSubmit={handlePropose} className="space-y-4">
                 {proposeError && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{proposeError}</div>
+                  <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{t(proposeError)}</div>
                 )}
                 <div>
-                  <label htmlFor="incidents-page-field-4" className="block text-sm font-semibold text-slate-700 mb-1.5">Solusi / Tindakan yang Dilakukan <span className="text-red-500">*</span></label>
+                  <label htmlFor="incidents-page-field-4" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Solusi / Tindakan yang Dilakukan")}{" "}<span className="text-red-500">*</span></label>
                   <textarea id="incidents-page-field-4"
                     value={proposeForm.solution}
                     onChange={(e) => setProposeForm((f) => ({ ...f, solution: e.target.value }))}
                     required rows={4}
-                    placeholder="Jelaskan tindakan perbaikan yang sudah dilakukan..."
+                    placeholder={t("Jelaskan tindakan perbaikan yang sudah dilakukan...")}
                     className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400 resize-none"
                   />
                 </div>
                 <div>
-                  <label htmlFor="incidents-page-field-5" className="block text-sm font-semibold text-slate-700 mb-1.5">Status Perangkat yang Diusulkan</label>
+                  <label htmlFor="incidents-page-field-5" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Status Perangkat yang Diusulkan")}</label>
                   <select id="incidents-page-field-5"
                     value={proposeForm.assetStatus}
                     onChange={(e) => setProposeForm((f) => ({ ...f, assetStatus: e.target.value }))}
                     className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
                     {ASSET_STATUS_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
+                      <option key={o.value} value={o.value}>{t(o.label)}</option>
                     ))}
                   </select>
                 </div>
-                <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 text-xs text-amber-700">
-                  ℹ️ Pengajuan ini akan dikirim ke Admin dan menunggu persetujuan sebelum insiden resmi ditandai selesai.
-                </div>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 text-xs text-amber-700">{t("ℹ️ Pengajuan ini akan dikirim ke Admin dan menunggu persetujuan sebelum insiden resmi ditandai selesai.")}</div>
                 <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={() => setProposeId(null)} className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition">
-                    Batal
-                  </button>
+                  <button type="button" onClick={() => setProposeId(null)} className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition">{t("Batal")}</button>
                   <button type="submit" disabled={proposeLoading} className="flex-1 bg-indigo-600 text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-indigo-700 transition disabled:opacity-60">
-                    {proposeLoading ? "Mengirim..." : "Kirim Pengajuan"}
+                    {proposeLoading ? t("Mengirim...") : t("Kirim Pengajuan")}
                   </button>
                 </div>
               </form>
@@ -762,32 +730,31 @@ export default function IncidentsPage() {
           MODAL: Review Pengajuan (Admin — Acc / Tolak)
       ═══════════════════════════════════════════════════════ */}
       {reviewIncident && (
-        <Dialog label="Review Pengajuan Penyelesaian" onClose={() => setReviewIncident(null)}>
+        <Dialog label={t("Review Pengajuan Penyelesaian")} onClose={() => setReviewIncident(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="p-6">
-              <h2 className="text-lg font-bold text-slate-900 mb-1">Review Pengajuan Penyelesaian</h2>
-              <p className="text-sm text-slate-500 mb-4">Periksa solusi yang diajukan dan putuskan untuk menyetujui atau menolak.</p>
+              <h2 className="text-lg font-bold text-slate-900 mb-1">{t("Review Pengajuan Penyelesaian")}</h2>
+              <p className="text-sm text-slate-500 mb-4">{t("Periksa solusi yang diajukan dan putuskan untuk menyetujui atau menolak.")}</p>
 
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4 space-y-3">
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Perangkat</p>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{t("Perangkat")}</p>
                   <p className="text-sm font-medium text-slate-800">{reviewIncident.asset.name}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Masalah</p>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{t("Masalah")}</p>
                   <p className="text-sm text-slate-700">{reviewIncident.description}</p>
                 </div>
                 <div className="border-t border-slate-200 pt-3">
-                  <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-1">
-                    Solusi Diajukan oleh {reviewIncident.proposedBy}
+                  <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-1">{t("Solusi Diajukan oleh")}{" "}{reviewIncident.proposedBy}
                     {reviewIncident.proposedAt && (
-                      <span className="text-slate-400 normal-case font-normal ml-1">· {formatDate(reviewIncident.proposedAt)}</span>
+                      <span className="text-slate-400 normal-case font-normal ml-1">· {formatDate(reviewIncident.proposedAt, locale)}</span>
                     )}
                   </p>
                   <p className="text-sm text-slate-800 font-medium">{reviewIncident.pendingSolution}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Status Perangkat Diusulkan</p>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{t("Status Perangkat Diusulkan")}</p>
                   <span className="text-xs font-bold bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">
                     {reviewIncident.pendingAssetStatus || "ACTIVE"}
                   </span>
@@ -795,29 +762,27 @@ export default function IncidentsPage() {
               </div>
 
               {reviewError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm mb-4">{reviewError}</div>
+                <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm mb-4">{t(reviewError)}</div>
               )}
 
               <div className="flex gap-3">
                 <button
                   onClick={() => setReviewIncident(null)}
                   className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition"
-                >
-                  Tutup
-                </button>
+                >{t("Tutup")}</button>
                 <button
                   onClick={handleReject}
                   disabled={reviewLoading}
                   className="flex-1 bg-red-600 text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-red-700 transition disabled:opacity-60"
                 >
-                  {reviewLoading ? "Proses..." : "✗ Tolak"}
+                  {reviewLoading ? t("Proses...") : t("✗ Tolak")}
                 </button>
                 <button
                   onClick={handleApprove}
                   disabled={reviewLoading}
                   className="flex-1 bg-green-600 text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-green-700 transition disabled:opacity-60"
                 >
-                  {reviewLoading ? "Proses..." : "✓ Acc"}
+                  {reviewLoading ? t("Proses...") : t("✓ Acc")}
                 </button>
               </div>
             </div>
@@ -829,43 +794,41 @@ export default function IncidentsPage() {
           MODAL: Selesaikan Langsung (Admin)
       ═══════════════════════════════════════════════════════ */}
       {resolveId && (
-        <Dialog label="Selesaikan Insiden" onClose={() => setResolveId(null)}>
+        <Dialog label={t("Selesaikan Insiden")} onClose={() => setResolveId(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="p-6">
-              <h2 className="text-lg font-bold text-slate-900 mb-1">Selesaikan Insiden</h2>
-              <p className="text-sm text-slate-500 mb-5">Isi solusi perbaikan dan perbarui status perangkat secara langsung.</p>
+              <h2 className="text-lg font-bold text-slate-900 mb-1">{t("Selesaikan Insiden")}</h2>
+              <p className="text-sm text-slate-500 mb-5">{t("Isi solusi perbaikan dan perbarui status perangkat secara langsung.")}</p>
               <form onSubmit={handleResolve} className="space-y-4">
                 {resolveError && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{resolveError}</div>
+                  <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{t(resolveError)}</div>
                 )}
                 <div>
-                  <label htmlFor="incidents-page-field-6" className="block text-sm font-semibold text-slate-700 mb-1.5">Solusi Perbaikan <span className="text-red-500">*</span></label>
+                  <label htmlFor="incidents-page-field-6" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Solusi Perbaikan")}{" "}<span className="text-red-500">*</span></label>
                   <textarea id="incidents-page-field-6"
                     value={resolveForm.solution}
                     onChange={(e) => setResolveForm((f) => ({ ...f, solution: e.target.value }))}
                     required rows={4}
-                    placeholder="Jelaskan solusi yang dilakukan..."
+                    placeholder={t("Jelaskan solusi yang dilakukan...")}
                     className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400 resize-none"
                   />
                 </div>
                 <div>
-                  <label htmlFor="incidents-page-field-7" className="block text-sm font-semibold text-slate-700 mb-1.5">Update Status Perangkat</label>
+                  <label htmlFor="incidents-page-field-7" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Update Status Perangkat")}</label>
                   <select id="incidents-page-field-7"
                     value={resolveForm.assetStatus}
                     onChange={(e) => setResolveForm((f) => ({ ...f, assetStatus: e.target.value }))}
                     className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
                     {ASSET_STATUS_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
+                      <option key={o.value} value={o.value}>{t(o.label)}</option>
                     ))}
                   </select>
                 </div>
                 <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={() => setResolveId(null)} className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition">
-                    Batal
-                  </button>
+                  <button type="button" onClick={() => setResolveId(null)} className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition">{t("Batal")}</button>
                   <button type="submit" disabled={resolveLoading} className="flex-1 bg-green-600 text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-green-700 transition disabled:opacity-60">
-                    {resolveLoading ? "Menyimpan..." : "✓ Selesaikan"}
+                    {resolveLoading ? t("Menyimpan...") : t("✓ Selesaikan")}
                   </button>
                 </div>
               </form>
@@ -878,19 +841,17 @@ export default function IncidentsPage() {
           MODAL: Hapus Konfirmasi
       ═══════════════════════════════════════════════════════ */}
       {deleteId && (
-        <Dialog label="Hapus Insiden?" onClose={() => setDeleteId(null)}>
+        <Dialog label={t("Hapus Insiden?")} onClose={() => setDeleteId(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-            <h2 className="text-lg font-bold text-slate-900 mb-2">Hapus Insiden?</h2>
-            <p className="text-sm text-slate-600 mb-4">Catatan insiden ini akan dihapus permanen.</p>
+            <h2 className="text-lg font-bold text-slate-900 mb-2">{t("Hapus Insiden?")}</h2>
+            <p className="text-sm text-slate-600 mb-4">{t("Catatan insiden ini akan dihapus permanen.")}</p>
             {deleteError && (
-              <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm mb-4">{deleteError}</div>
+              <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm mb-4">{t(deleteError)}</div>
             )}
             <div className="flex gap-3">
-              <button onClick={() => setDeleteId(null)} className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition">
-                Batal
-              </button>
+              <button onClick={() => setDeleteId(null)} className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition">{t("Batal")}</button>
               <button onClick={handleDelete} disabled={deleteLoading} className="flex-1 bg-red-600 text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-red-700 transition disabled:opacity-60">
-                {deleteLoading ? "Menghapus..." : "Ya, Hapus"}
+                {deleteLoading ? t("Menghapus...") : t("Ya, Hapus")}
               </button>
             </div>
           </div>

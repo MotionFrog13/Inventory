@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/components/LanguageProvider";
+import { formatDate } from "@/lib/utils";
 import UiIcon from "@/components/UiIcon";
 import PageHeading from "@/components/PageHeading";
 import GuideCard from "@/components/GuideCard";
@@ -8,7 +10,7 @@ import Dialog from "@/components/Dialog";
 export const dynamic = "force-dynamic";
 
 import { useState, useEffect, useCallback } from "react";
-import { ROLE_TIER_LABELS, VALID_ROLES } from "@/lib/utils";
+import { ROLE_TIER_LABELS, VALID_ROLES, roleLabel } from "@/lib/utils";
 
 interface User {
   id: string;
@@ -49,12 +51,7 @@ const EMPTY_FORM: UserFormState = {
   branchIds: [],
 };
 
-function formatDate(d: string): string {
-  return new Date(d).toLocaleDateString("id-ID", {
-    day: "numeric", month: "short", year: "numeric",
-    timeZone: "Asia/Jakarta",
-  });
-}
+
 
 const ROLE_COLORS: Record<string, string> = {
   SUPER_ADMIN: "bg-purple-100 text-purple-800 border border-purple-200",
@@ -106,6 +103,7 @@ function UserFormFields({
   branches: Option[];
   isEdit: boolean;
 }) {
+  const { t } = useI18n();
   const isSuper = form.role === "SUPER_ADMIN";
 
   function toggleBranch(id: string) {
@@ -118,13 +116,13 @@ function UserFormFields({
   return (
     <>
       <div>
-        <label htmlFor="users-page-field-1" className={labelClass}>Nama Lengkap <span className="text-red-500">*</span></label>
+        <label htmlFor="users-page-field-1" className={labelClass}>{t("Nama Lengkap")}{" "}<span className="text-red-500">*</span></label>
         <input id="users-page-field-1"
           type="text"
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
           required
-          placeholder="Contoh: Budi Santoso"
+          placeholder={t("Contoh: Budi Santoso")}
           className={inputClass}
         />
       </div>
@@ -139,25 +137,25 @@ function UserFormFields({
             placeholder="budi.santoso"
             className={`${inputClass} font-mono`}
           />
-          <p className="text-xs text-slate-400 mt-1">Huruf kecil, angka, titik, _ atau -. Tanpa @.</p>
+          <p className="text-xs text-slate-400 mt-1">{t("Huruf kecil, angka, titik, _ atau -. Tanpa @.")}</p>
         </div>
         <div>
           <label htmlFor="users-page-field-3" className={labelClass}>
-            Email {isSuper ? <span className="text-red-500">*</span> : <span className="text-slate-400 font-normal">(opsional)</span>}
+            Email {isSuper ? <span className="text-red-500">*</span> : <span className="text-slate-400 font-normal">{t("(opsional)")}</span>}
           </label>
           <input id="users-page-field-3"
             type="email"
             value={form.email}
             onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
             required={isSuper}
-            placeholder="nama@perusahaan.com"
+            placeholder={t("nama@perusahaan.com")}
             className={inputClass}
           />
         </div>
       </div>
       <div>
         <label htmlFor="users-page-field-4" className={labelClass}>
-          {isEdit ? <>Password Baru <span className="text-slate-400 font-normal">(Opsional)</span></> : <>Password <span className="text-red-500">*</span></>}
+          {isEdit ? <>{t("Password Baru")}{" "}<span className="text-slate-400 font-normal">{t("(Opsional)")}</span></> : <>Password <span className="text-red-500">*</span></>}
         </label>
         <input id="users-page-field-4"
           type="password"
@@ -165,19 +163,19 @@ function UserFormFields({
           onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
           required={!isEdit}
           minLength={6}
-          placeholder={isEdit ? "Kosongkan jika tidak diubah" : "Minimal 6 karakter"}
+          placeholder={isEdit ? t("Kosongkan jika tidak diubah") : t("Minimal 6 karakter")}
           className={inputClass}
         />
       </div>
       <div>
-        <label htmlFor="users-page-field-5" className={labelClass}>Peran</label>
+        <label htmlFor="users-page-field-5" className={labelClass}>{t("Peran")}</label>
         <select id="users-page-field-5"
           value={form.role}
           onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
           className={inputClass}
         >
           {VALID_ROLES.map((r) => (
-            <option key={r} value={r}>{ROLE_TIER_LABELS[r]}</option>
+            <option key={r} value={r}>{t(ROLE_TIER_LABELS[r])}</option>
           ))}
         </select>
       </div>
@@ -187,21 +185,21 @@ function UserFormFields({
       {!isSuper && (
         <>
           <div>
-            <label htmlFor="users-page-field-6" className={labelClass}>Divisi <span className="text-red-500">*</span></label>
+            <label htmlFor="users-page-field-6" className={labelClass}>{t("Divisi")}{" "}<span className="text-red-500">*</span></label>
             <select id="users-page-field-6"
               value={form.divisionId}
               onChange={(e) => setForm((f) => ({ ...f, divisionId: e.target.value }))}
               required
               className={`${inputClass} ${form.divisionId ? "" : "border-red-400 focus:ring-red-500/20"}`}
             >
-              <option value="">Pilih Divisi...</option>
+              <option value="">{t("Pilih Divisi...")}</option>
               {divisions.map((d) => (
                 <option key={d.id} value={d.id}>{d.name}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className={labelClass}>Outlet Penugasan <span className="text-red-500">*</span></label>
+            <label className={labelClass}>{t("Outlet Penugasan")}{" "}<span className="text-red-500">*</span></label>
             <div className={`border rounded-lg p-3 space-y-2 max-h-44 overflow-y-auto ${form.branchIds.length ? "border-slate-200" : "border-red-400"}`}>
               {branches.map((b) => (
                 <label key={b.id} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
@@ -216,11 +214,9 @@ function UserFormFields({
               ))}
             </div>
             {form.branchIds.length === 0 ? (
-              <p className="text-red-500 text-xs mt-1">Akun tanpa outlet tidak dapat mengakses data apa pun.</p>
+              <p className="text-red-500 text-xs mt-1">{t("Akun tanpa outlet tidak dapat mengakses data apa pun.")}</p>
             ) : (
-              <p className="text-xs text-slate-400 mt-1">
-                Pengguna hanya melihat aset, insiden, dan transfer divisinya di outlet yang dipilih.
-              </p>
+              <p className="text-xs text-slate-400 mt-1">{t("Pengguna hanya melihat aset, insiden, dan transfer divisinya di outlet yang dipilih.")}</p>
             )}
           </div>
         </>
@@ -230,6 +226,7 @@ function UserFormFields({
 }
 
 export default function UsersPage() {
+  const { t, locale } = useI18n();
   const [users, setUsers] = useState<User[]>([]);
   const [branches, setBranches] = useState<Option[]>([]);
   const [divisions, setDivisions] = useState<Option[]>([]);
@@ -387,8 +384,8 @@ export default function UsersPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <div className="text-6xl"><UiIcon size={40} name="lock" className="inline-block align-middle" /></div>
-        <h1 className="page-title">Akses Ditolak</h1>
-        <p className="text-slate-500">Halaman ini hanya dapat diakses oleh Super Admin.</p>
+        <h1 className="page-title">{t("Akses Ditolak")}</h1>
+        <p className="text-slate-500">{t("Halaman ini hanya dapat diakses oleh Super Admin.")}</p>
       </div>
     );
   }
@@ -408,22 +405,20 @@ export default function UsersPage() {
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <PageHeading eyebrow="Administrasi" title={<>Manajemen Pengguna</>} description={<>Kelola akun, peran, divisi, dan outlet pengguna organisasi Anda.</>} />
+        <PageHeading eyebrow={t("Administrasi")} title={<>{t("Manajemen Pengguna")}</>} description={<>{t("Kelola akun, peran, divisi, dan outlet pengguna organisasi Anda.")}</>} />
         <button
           id="btn-add-user"
           onClick={() => { setShowAddModal(true); setAddError(null); setAddForm(EMPTY_FORM); }}
           className="bg-indigo-600 text-white font-semibold px-4 py-2.5 rounded-lg text-sm hover:bg-indigo-700 active:scale-[0.98] transition-all duration-200 ease-in-out shadow-sm flex items-center gap-2"
-        >
-          + Tambah Pengguna
-        </button>
+        >{t("+ Tambah Pengguna")}</button>
       </div>
-      <GuideCard title="Pastikan penugasan akun lengkap" icon="users">Admin dan staf divisi memerlukan satu divisi dan minimal satu outlet. Super Admin memiliki akses organisasi dan wajib menggunakan email.</GuideCard>
+      <GuideCard title={t("Pastikan penugasan akun lengkap")} icon="users">{t("Admin dan staf divisi memerlukan satu divisi dan minimal satu outlet. Super Admin memiliki akses organisasi dan wajib menggunakan email.")}</GuideCard>
 
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <div className="ui-panel bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-          <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Total Pengguna</p>
+          <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">{t("Total Pengguna")}</p>
           <p className="text-3xl font-bold text-slate-900">{users.length}</p>
         </div>
         <div className="ui-panel bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
@@ -431,7 +426,7 @@ export default function UsersPage() {
           <p className="text-3xl font-bold text-purple-700">{users.filter(u => u.role === "SUPER_ADMIN" || u.role === "DIVISION_ADMIN").length}</p>
         </div>
         <div className="ui-panel bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-          <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Staf</p>
+          <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">{t("Staf")}</p>
           <p className="text-3xl font-bold text-blue-700">{users.filter(u => u.role === "DIVISION_STAFF").length}</p>
         </div>
       </div>
@@ -441,26 +436,26 @@ export default function UsersPage() {
         {loading ? (
           <div className="py-16 flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin"></div>
-            <p className="text-sm text-slate-500">Memuat data pengguna...</p>
+            <p className="text-sm text-slate-500">{t("Memuat data pengguna...")}</p>
           </div>
         ) : users.length === 0 ? (
           <div className="py-16 text-center">
             <div className="text-5xl mb-3"><UiIcon size={40} name="users" className="inline-block align-middle" /></div>
-            <p className="font-semibold text-slate-700">Belum ada pengguna</p>
-            <p className="text-xs text-slate-400 mt-1">Tambahkan pengguna baru untuk memulai.</p>
+            <p className="font-semibold text-slate-700">{t("Belum ada pengguna")}</p>
+            <p className="text-xs text-slate-400 mt-1">{t("Tambahkan pengguna baru untuk memulai.")}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="inventory-table w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/70">
-                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-3.5">Nama</th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-3.5">{t("Nama")}</th>
                   <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-3.5">Username</th>
                   <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-3.5">Email</th>
-                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-3.5">Peran</th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-3.5">{t("Peran")}</th>
                   <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-3.5">Outlet</th>
-                  <th className="hidden 2xl:table-cell text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-3.5">Terdaftar</th>
-                  <th className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-3.5">Aksi</th>
+                  <th className="hidden 2xl:table-cell text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-3.5">{t("Terdaftar")}</th>
+                  <th className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-3.5">{t("Aksi")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -475,7 +470,7 @@ export default function UsersPage() {
                           </div>
                           <span className="font-semibold text-slate-900">
                             {user.name}
-                            {user.id === currentUserId && <span className="text-xs text-slate-400 font-normal ml-1">(Anda)</span>}
+                            {user.id === currentUserId && <span className="text-xs text-slate-400 font-normal ml-1">{t("(Anda)")}</span>}
                           </span>
                         </div>
                       </td>
@@ -483,20 +478,17 @@ export default function UsersPage() {
                       <td className="px-3 py-4 text-slate-600">{user.email || <span className="text-slate-300">—</span>}</td>
                       <td className="px-3 py-4">
                         <span className={`inline-block whitespace-nowrap text-xs font-bold px-2.5 py-1 rounded-full ${ROLE_COLORS[user.role] || "bg-slate-100 text-slate-700"}`}>
-                          {user.roleLabel}
+                          {roleLabel(user.role, user.division?.name, locale)}
                         </span>
                       </td>
                       {/* Outlet — akun non-Super Admin tanpa penugasan TIDAK dapat
                           mengakses apa pun, jadi ditandai mencolok. */}
                       <td className="px-3 py-4">
                         {user.role === "SUPER_ADMIN" ? (
-                          <span className="inline-block whitespace-nowrap text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200/60">
-                            Semua outlet
-                          </span>
+                          <span className="inline-block whitespace-nowrap text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200/60">{t("Semua outlet")}</span>
                         ) : unassigned ? (
                           <span className="inline-block whitespace-nowrap text-xs font-semibold px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200/60">
-                            <UiIcon name="warning" className="inline-block align-middle" /> Belum ditugaskan
-                          </span>
+                            <UiIcon name="warning" className="inline-block align-middle" />{" "}{t("Belum ditugaskan")}</span>
                         ) : (
                           <div className="flex flex-wrap gap-1">
                             {user.branches.map((b) => (
@@ -507,7 +499,7 @@ export default function UsersPage() {
                           </div>
                         )}
                       </td>
-                      <td className="hidden 2xl:table-cell px-3 py-4 text-slate-500 whitespace-nowrap">{formatDate(user.createdAt)}</td>
+                      <td className="hidden 2xl:table-cell px-3 py-4 text-slate-500 whitespace-nowrap">{formatDate(user.createdAt, locale)}</td>
                       <td className="px-3 py-4">
                         <div className="flex items-center justify-end gap-2">
                           <button
@@ -520,10 +512,8 @@ export default function UsersPage() {
                             onClick={() => { setDeleteUser(user); setDeleteError(null); }}
                             disabled={user.id === currentUserId}
                             className="text-xs font-semibold text-red-600 hover:text-red-800 hover:underline transition px-2 py-1 rounded hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline"
-                            title={user.id === currentUserId ? "Tidak dapat menghapus akun Anda sendiri" : "Hapus pengguna"}
-                          >
-                            Hapus
-                          </button>
+                            title={user.id === currentUserId ? t("Tidak dapat menghapus akun Anda sendiri") : t("Hapus pengguna")}
+                          >{t("Hapus")}</button>
                         </div>
                       </td>
                     </tr>
@@ -537,21 +527,19 @@ export default function UsersPage() {
 
       {/* Modal: Tambah User */}
       {showAddModal && (
-        <Dialog label="Tambah Pengguna Baru" onClose={() => setShowAddModal(false)}>
+        <Dialog label={t("Tambah Pengguna Baru")} onClose={() => setShowAddModal(false)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="p-6">
-              <h2 className="text-lg font-bold text-slate-900 mb-1">Tambah Pengguna Baru</h2>
-              <p className="text-sm text-slate-500 mb-5">Buat akun baru dan tentukan peran, divisi, serta outletnya.</p>
+              <h2 className="text-lg font-bold text-slate-900 mb-1">{t("Tambah Pengguna Baru")}</h2>
+              <p className="text-sm text-slate-500 mb-5">{t("Buat akun baru dan tentukan peran, divisi, serta outletnya.")}</p>
               <form onSubmit={handleAdd} className="space-y-4">
                 {addError && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{addError}</div>
+                  <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{t(addError)}</div>
                 )}
                 <UserFormFields form={addForm} setForm={setAddForm} divisions={divisions} branches={branches} isEdit={false} />
                 <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition">
-                    Batal
-                  </button>
-                  {submitButton(addLoading, "Tambah Pengguna", "Menyimpan...")}
+                  <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition">{t("Batal")}</button>
+                  {submitButton(addLoading, t("Tambah Pengguna"), t("Menyimpan..."))}
                 </div>
               </form>
             </div>
@@ -561,21 +549,19 @@ export default function UsersPage() {
 
       {/* Modal: Edit User */}
       {editUser && (
-        <Dialog label="Edit Pengguna" onClose={() => setEditUser(null)}>
+        <Dialog label={t("Edit Pengguna")} onClose={() => setEditUser(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="p-6">
-              <h2 className="text-lg font-bold text-slate-900 mb-1">Edit Pengguna</h2>
-              <p className="text-sm text-slate-500 mb-5">Perbarui informasi akun <strong>{editUser.name}</strong>. Kosongkan field password jika tidak ingin mengubahnya.</p>
+              <h2 className="text-lg font-bold text-slate-900 mb-1">{t("Edit Pengguna")}</h2>
+              <p className="text-sm text-slate-500 mb-5">{t("Perbarui informasi akun")}{" "}<strong>{editUser.name}</strong>. Kosongkan field password jika tidak ingin mengubahnya.</p>
               <form onSubmit={handleEdit} className="space-y-4">
                 {editError && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{editError}</div>
+                  <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{t(editError)}</div>
                 )}
                 <UserFormFields form={editForm} setForm={setEditForm} divisions={divisions} branches={branches} isEdit />
                 <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={() => setEditUser(null)} className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition">
-                    Batal
-                  </button>
-                  {submitButton(editLoading, "Simpan Perubahan", "Menyimpan...")}
+                  <button type="button" onClick={() => setEditUser(null)} className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition">{t("Batal")}</button>
+                  {submitButton(editLoading, t("Simpan Perubahan"), t("Menyimpan..."))}
                 </div>
               </form>
             </div>
@@ -585,23 +571,19 @@ export default function UsersPage() {
 
       {/* Modal: Konfirmasi Hapus */}
       {deleteUser && (
-        <Dialog label="Hapus Pengguna?" onClose={() => setDeleteUser(null)}>
+        <Dialog label={t("Hapus Pengguna?")} onClose={() => setDeleteUser(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
             <div className="p-6">
               <div className="text-4xl mb-3"><UiIcon name="warning" className="inline-block align-middle" /></div>
-              <h2 className="text-lg font-bold text-slate-900 mb-1">Hapus Pengguna?</h2>
-              <p className="text-sm text-slate-500 mb-4">
-                Akun <strong>{deleteUser.name}</strong> ({deleteUser.username}) akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.
-              </p>
+              <h2 className="text-lg font-bold text-slate-900 mb-1">{t("Hapus Pengguna?")}</h2>
+              <p className="text-sm text-slate-500 mb-4">{t("Akun")}{" "}<strong>{deleteUser.name}</strong> ({deleteUser.username}{t(") akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.")}</p>
               {deleteError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm mb-4">{deleteError}</div>
+                <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm mb-4">{t(deleteError)}</div>
               )}
               <div className="flex gap-3">
-                <button onClick={() => setDeleteUser(null)} className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition">
-                  Batal
-                </button>
+                <button onClick={() => setDeleteUser(null)} className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-lg text-sm hover:bg-slate-200 transition">{t("Batal")}</button>
                 <button onClick={handleDelete} disabled={deleteLoading} className="flex-1 bg-red-600 text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
-                  {deleteLoading ? "Menghapus..." : "Ya, Hapus"}
+                  {deleteLoading ? t("Menghapus...") : t("Ya, Hapus")}
                 </button>
               </div>
             </div>

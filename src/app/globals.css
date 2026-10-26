@@ -1,5 +1,21 @@
 @import "tailwindcss";
 
+.language-switcher select {
+  max-width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.65rem;
+  padding: 0.5rem 1.6rem 0.5rem 0.65rem;
+  background-color: #fff;
+  color: #334155;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 200ms, box-shadow 200ms;
+}
+.language-switcher select:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.language-switcher select:disabled { opacity: 0.6; cursor: wait; }
+.language-switcher { flex-shrink: 0; }
+
 @theme {
   --font-sans: var(--font-geist, ui-sans-serif), system-ui, sans-serif;
   --font-display: var(--font-geist, ui-sans-serif), system-ui, sans-serif;
@@ -806,6 +822,8 @@ button:not(:disabled), summary, select { cursor: pointer; }
 }
 @media (max-width: 767.98px) {
   .main-content { padding: 1.25rem 1rem 2rem; }
+  .language-switcher select { max-width: 8.5rem; padding-left: 0.4rem; }
+  .header-right { gap: 0.4rem; flex-shrink: 0; }
   .app-header { padding-inline: 1rem; }
   .header-breadcrumb { gap: .35rem; font-size: .75rem; }
   .header-breadcrumb a { display: none; }

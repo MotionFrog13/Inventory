@@ -1,9 +1,11 @@
 "use client";
+import { useI18n } from "@/components/LanguageProvider";
 
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 
 /** Native modal supplies focus trapping, background inertness, and focus restoration. */
 export default function Dialog({ children, label, onClose }: { children: ReactNode; label: string; onClose: () => void }) {
+  const { t } = useI18n();
   const ref = useRef<HTMLDialogElement>(null);
   useLayoutEffect(() => {
     const dialog = ref.current;
@@ -18,7 +20,7 @@ export default function Dialog({ children, label, onClose }: { children: ReactNo
   }, []);
 
   return (
-    <dialog ref={ref} className="app-dialog" aria-label={label} onCancel={(event) => { event.preventDefault(); onClose(); }}>
+    <dialog ref={ref} className="app-dialog" aria-label={t(label)} onCancel={(event) => { event.preventDefault(); onClose(); }}>
       <div className="dialog-content">{children}</div>
     </dialog>
   );

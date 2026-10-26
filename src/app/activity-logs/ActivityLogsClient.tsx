@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/components/LanguageProvider";
 import PageHeading from "@/components/PageHeading";
 import GuideCard from "@/components/GuideCard";
 import UiIcon from "@/components/UiIcon";
@@ -54,6 +55,7 @@ const ACTION_COLORS: Record<string, string> = {
 };
 
 export default function ActivityLogsPage() {
+  const { t, locale } = useI18n();
   const router = useRouter();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 20, total: 0, totalPages: 0 });
@@ -129,8 +131,8 @@ export default function ActivityLogsPage() {
     }
   };
 
-  function formatDateTime(dStr: string): string {
-    return new Date(dStr).toLocaleString("id-ID", {
+  function formatDateTime(dStr: string, language: "en" | "id"): string {
+    return new Date(dStr).toLocaleString(language === "en" ? "en-GB" : "id-ID", {
       day: "numeric",
       month: "short",
       year: "numeric",
@@ -145,7 +147,7 @@ export default function ActivityLogsPage() {
     return (
       <div className="py-20 flex flex-col items-center gap-3">
         <div className="w-8 h-8 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin"></div>
-        <p className="text-sm text-slate-500 font-medium">Memeriksa hak akses...</p>
+        <p className="text-sm text-slate-500 font-medium">{t("Memeriksa hak akses...")}</p>
       </div>
     );
   }
@@ -154,16 +156,13 @@ export default function ActivityLogsPage() {
     return (
       <div className="ui-panel max-w-md mx-auto my-20 p-8 bg-white border border-slate-200 rounded-2xl shadow-lg text-center">
         <div className="text-6xl mb-4">🚫</div>
-        <h1 className="page-title">Akses Ditolak</h1>
-        <p className="text-slate-500 mb-6">
-          Halaman ini hanya dapat diakses oleh peran <strong>Super Admin</strong>.
+        <h1 className="page-title">{t("Akses Ditolak")}</h1>
+        <p className="text-slate-500 mb-6">{t("Halaman ini hanya dapat diakses oleh peran")}{" "}<strong>{t("Super Admin")}</strong>.
         </p>
         <button
           onClick={() => router.push("/")}
           className="bg-indigo-600 text-white font-medium px-6 py-2.5 rounded-xl hover:bg-indigo-700 active:scale-[0.98] transition-all duration-200"
-        >
-          Kembali ke Dashboard
-        </button>
+        >{t("Kembali ke Dashboard")}</button>
       </div>
     );
   }
@@ -171,8 +170,8 @@ export default function ActivityLogsPage() {
   return (
     <div className="space-y-5 animate-fade-in">
       {/* Header Halaman */}
-      <PageHeading eyebrow="Administrasi" title={<>Log Aktivitas Sistem</>} description={<>Histori dan kronologi aktivitas operasional penting di organisasi Anda.</>} />
-      <GuideCard title="Telusuri perubahan di organisasi" icon="history">Gunakan pencarian untuk menemukan pengguna, tindakan, atau detail aktivitas. Halaman ini hanya tersedia untuk Super Admin.</GuideCard>
+      <PageHeading eyebrow={t("Administrasi")} title={<>{t("Log Aktivitas Sistem")}</>} description={<>{t("Histori dan kronologi aktivitas operasional penting di organisasi Anda.")}</>} />
+      <GuideCard title={t("Telusuri perubahan di organisasi")} icon="history">{t("Gunakan pencarian untuk menemukan pengguna, tindakan, atau detail aktivitas. Halaman ini hanya tersedia untuk Super Admin.")}</GuideCard>
 
 
       {/* Filter / Search Bar */}
@@ -181,15 +180,14 @@ export default function ActivityLogsPage() {
           <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 text-sm"><UiIcon name="search" className="inline-block align-middle" /></span>
           <input
             type="text"
-            aria-label="Cari log aktivitas"
-            placeholder="Cari berdasarkan nama pengguna, aksi, atau detail..."
+            aria-label={t("Cari log aktivitas")}
+            placeholder={t("Cari berdasarkan nama pengguna, aksi, atau detail...")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
           />
         </div>
-        <div className="text-xs text-slate-400 md:ml-auto font-medium">
-          Menampilkan {logs.length} dari total {pagination.total} log
+        <div className="text-xs text-slate-400 md:ml-auto font-medium">{t("Menampilkan")}{" "}{logs.length}{" "}{t("dari total")}{" "}{pagination.total} log
         </div>
       </div>
 
@@ -198,23 +196,23 @@ export default function ActivityLogsPage() {
         {loading ? (
           <div className="py-16 flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin"></div>
-            <p className="text-sm text-slate-500">Memuat log aktivitas...</p>
+            <p className="text-sm text-slate-500">{t("Memuat log aktivitas...")}</p>
           </div>
         ) : logs.length === 0 ? (
           <div className="py-16 text-center">
             <div className="text-5xl mb-3"><UiIcon size={40} name="history" className="inline-block align-middle" /></div>
-            <p className="font-semibold text-slate-700">Tidak ada log aktivitas ditemukan</p>
-            <p className="text-xs text-slate-400 mt-1">Coba sesuaikan kata kunci pencarian Anda.</p>
+            <p className="font-semibold text-slate-700">{t("Tidak ada log aktivitas ditemukan")}</p>
+            <p className="text-xs text-slate-400 mt-1">{t("Coba sesuaikan kata kunci pencarian Anda.")}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="inventory-table w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/70">
-                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3.5 w-1/5">Waktu</th>
-                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3.5 w-1/5">Pengguna</th>
-                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3.5 w-1/6">Aksi</th>
-                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3.5 w-2/5">Deskripsi</th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3.5 w-1/5">{t("Waktu")}</th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3.5 w-1/5">{t("Pengguna")}</th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3.5 w-1/6">{t("Aksi")}</th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3.5 w-2/5">{t("Deskripsi")}</th>
                   <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3.5 w-1/12">IP Address</th>
                 </tr>
               </thead>
@@ -222,7 +220,7 @@ export default function ActivityLogsPage() {
                 {logs.map((log) => (
                   <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-5 py-4 text-slate-500 whitespace-nowrap">
-                      {formatDateTime(log.createdAt)}
+                      {formatDateTime(log.createdAt, locale)}
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2.5">
@@ -259,19 +257,14 @@ export default function ActivityLogsPage() {
               onClick={() => handlePageChange(pagination.page - 1)}
               disabled={pagination.page <= 1}
               className="px-3.5 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed bg-white shadow-2xs hover:border-slate-300 transition-all duration-200"
-            >
-              ◀ Sebelumnya
-            </button>
-            <span className="text-xs text-slate-500 font-medium">
-              Halaman <strong>{pagination.page}</strong> dari <strong>{pagination.totalPages}</strong>
+            >{t("◀ Sebelumnya")}</button>
+            <span className="text-xs text-slate-500 font-medium">{t("Halaman")}{" "}<strong>{pagination.page}</strong>{" "}{t("dari")}{" "}<strong>{pagination.totalPages}</strong>
             </span>
             <button
               onClick={() => handlePageChange(pagination.page + 1)}
               disabled={pagination.page >= pagination.totalPages}
               className="px-3.5 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed bg-white shadow-2xs hover:border-slate-300 transition-all duration-200"
-            >
-              Selanjutnya ▶
-            </button>
+            >{t("Selanjutnya ▶")}</button>
           </div>
         )}
       </div>

@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/components/LanguageProvider";
 
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -12,6 +13,7 @@ import { MOBILE_MEDIA_QUERY, useMediaQuery } from "@/lib/use-media-query";
 // shell ini hanya memastikan pengguna melihat alasannya dan dapat keluar,
 // alih-alih terjebak di halaman kosong yang penuh galat.
 function UnassignedNotice() {
+  const { t } = useI18n();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -26,10 +28,8 @@ function UnassignedNotice() {
     <div className="animate-fade-in flex items-center justify-center py-20">
       <div className="max-w-md w-full bg-white border border-slate-200/80 rounded-2xl shadow-sm p-8 text-center">
         <div className="text-5xl mb-3">🔒</div>
-        <h1 className="text-xl font-bold text-slate-900">Akses Ditolak</h1>
-        <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-          Akun Anda belum ditugaskan ke divisi dan outlet. Hubungi Super Admin.
-        </p>
+        <h1 className="text-xl font-bold text-slate-900">{t("Akses Ditolak")}</h1>
+        <p className="text-sm text-slate-500 mt-2 leading-relaxed">{t("Akun Anda belum ditugaskan ke divisi dan outlet. Hubungi Super Admin.")}</p>
         <button
           onClick={logout}
           disabled={loading}
@@ -37,9 +37,7 @@ function UnassignedNotice() {
         >
           {loading && (
             <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          )}
-          Keluar
-        </button>
+          )}{t("Keluar")}</button>
       </div>
     </div>
   );

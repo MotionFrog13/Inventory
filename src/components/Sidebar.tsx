@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/components/LanguageProvider";
 import Image from "next/image";
 
 import Link from "next/link";
@@ -44,6 +45,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ user, isMobile, mobileOpen, onClose }: SidebarProps) {
+  const { t, locale } = useI18n();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   // Mode ikon (rail) hanya untuk desktop; laci ponsel selalu menampilkan label.
@@ -78,16 +80,16 @@ export default function Sidebar({ user, isMobile, mobileOpen, onClose }: Sidebar
   const branchLabel = !user
     ? ""
     : user.role === "SUPER_ADMIN"
-      ? "Semua Outlet"
+      ? t("Semua Outlet")
       : user.branches.length === 1
         ? user.branches[0].name
-        : `${user.branches.length} outlet`;
-  const scopeLine = user ? `${divisionScopeLabel(user)} · ${branchLabel}` : "";
+        : t("{0} outlet", [user.branches.length]);
+  const scopeLine = user ? `${divisionScopeLabel(user, locale)} · ${branchLabel}` : "";
 
   return (
     <aside
       id="app-sidebar"
-      aria-label="Navigasi utama"
+      aria-label={t("Navigasi utama")}
       className={cn(
         "sidebar",
         isCollapsed && "sidebar-collapsed",
@@ -99,7 +101,7 @@ export default function Sidebar({ user, isMobile, mobileOpen, onClose }: Sidebar
     >
       {/* Logo / Brand */}
       <div className="sidebar-header">
-        <Link href="/" className="sidebar-brand" aria-label="Inventory, buka ringkasan" onClick={handleNavigate}>
+        <Link href="/" className="sidebar-brand" aria-label={t("Inventory, buka ringkasan")} onClick={handleNavigate}>
           <span className="sidebar-logo">
             <Image src="/logo.svg" width={40} height={40} alt="" className="w-full h-full" />
           </span>
@@ -117,7 +119,7 @@ export default function Sidebar({ user, isMobile, mobileOpen, onClose }: Sidebar
             type="button"
             onClick={() => onClose(true)}
             className="sidebar-toggle"
-            aria-label="Tutup menu navigasi"
+            aria-label={t("Tutup menu navigasi")}
           >
             <UiIcon name="close" size={18} />
           </button>
@@ -126,7 +128,7 @@ export default function Sidebar({ user, isMobile, mobileOpen, onClose }: Sidebar
             type="button"
             onClick={() => setCollapsed(!collapsed)}
             className="sidebar-toggle"
-            aria-label={collapsed ? "Perluas navigasi" : "Ringkas navigasi"}
+            aria-label={collapsed ? t("Perluas navigasi") : t("Ringkas navigasi")}
           >
             <UiIcon name={collapsed ? "chevron" : "back"} size={16} />
           </button>
@@ -135,7 +137,7 @@ export default function Sidebar({ user, isMobile, mobileOpen, onClose }: Sidebar
 
       {/* Navigation */}
       <nav className="sidebar-nav">
-        {!isCollapsed && <p className="sidebar-section-label">Ruang kerja</p>}
+        {!isCollapsed && <p className="sidebar-section-label">{t("Ruang kerja")}</p>}
         {NAV_ITEMS.map((item) => (
           <Link
             key={item.href}
@@ -151,7 +153,7 @@ export default function Sidebar({ user, isMobile, mobileOpen, onClose }: Sidebar
           >
             <span className="sidebar-link-icon"><UiIcon name={item.icon} /></span>
             {!isCollapsed && (
-              <span className="sidebar-link-label">{item.label}</span>
+              <span className="sidebar-link-label">{t(item.label)}</span>
             )}
           </Link>
         ))}
@@ -161,7 +163,7 @@ export default function Sidebar({ user, isMobile, mobileOpen, onClose }: Sidebar
           <>
             {!isCollapsed && (
               <div className="px-3 pt-4 pb-1">
-                <p className="sidebar-section-label">Administrasi</p>
+                <p className="sidebar-section-label">{t("Administrasi")}</p>
               </div>
             )}
             {adminItems.map((item) => (
@@ -179,7 +181,7 @@ export default function Sidebar({ user, isMobile, mobileOpen, onClose }: Sidebar
               >
                 <span className="sidebar-link-icon"><UiIcon name={item.icon} /></span>
                 {!isCollapsed && (
-                  <span className="sidebar-link-label">{item.label}</span>
+                  <span className="sidebar-link-label">{t(item.label)}</span>
                 )}
               </Link>
             ))}
@@ -191,7 +193,7 @@ export default function Sidebar({ user, isMobile, mobileOpen, onClose }: Sidebar
       {!isCollapsed && (
         <div className="sidebar-footer">
           <span className="sidebar-workspace-dot" aria-hidden="true" />
-          <div><p className="sidebar-footer-text">{user?.organization.name ?? "Ruang kerja Anda"}</p><p className="sidebar-footer-version">{scopeLine || "Inventaris organisasi"}</p></div>
+          <div><p className="sidebar-footer-text">{user?.organization.name ?? t("Ruang kerja Anda")}</p><p className="sidebar-footer-version">{scopeLine || t("Inventaris organisasi")}</p></div>
         </div>
       )}
     </aside>

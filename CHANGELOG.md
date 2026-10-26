@@ -4,6 +4,9 @@ Seluruh perubahan dan catatan rilis untuk proyek **Inventory** didokumentasikan 
 
 ## [Unreleased]
 
+- Bahasa Inggris menjadi bahasa utama aplikasi; pemilih English/Bahasa Indonesia tersedia pada login dan header, dengan preferensi tersimpan dalam cookie.
+- Navigasi, formulir, status, validasi, dashboard, laporan, serta tampilan tanggal mengikuti bahasa pilihan. Nama dan data yang ditulis pengguna tidak diterjemahkan.
+
 - Instalasi utama `docker compose up -d --build --wait --wait-timeout 600` menjalankan aplikasi produksi beserta PostgreSQL, migrasi dan akun admin acak. Konfigurasi database khusus developer dipindahkan ke `docker/compose.db.yml`.
 - README dilengkapi instalasi ZIP/Git, login pertama, update, pengaturan port, dan panduan Bahasa Indonesia (`INSTALL.md`).
 - CI GitHub memeriksa tipe, lint, build, unit, integrasi, HTTP QA, serta instalasi Docker pada volume baru dan persistensi data saat kontainer dibuat ulang.

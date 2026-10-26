@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/components/LanguageProvider";
 import GuideCard from "@/components/GuideCard";
 import UiIcon from "@/components/UiIcon";
 
@@ -20,10 +21,7 @@ import {
 // akan ditolak server — mis. BAP_PENDING / BAP.
 const ASSET_STATUSES = EDITABLE_ASSET_STATUSES.map((value) => ({
   value,
-  label:
-    value === "ACTIVE"
-      ? ASSET_STATUS_LABELS[value]
-      : `${ASSET_STATUS_LABELS[value]} (${value})`,
+  label: ASSET_STATUS_LABELS[value],
 }));
 
 interface Branch {
@@ -43,6 +41,7 @@ const lockedClass =
   "w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-500 bg-slate-100 flex items-center gap-1.5 cursor-not-allowed";
 
 export default function NewAssetPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const [me, setMe] = useState<SessionUserView | null>(null);
   const [divisions, setDivisions] = useState<DivisionOption[]>([]);
@@ -160,11 +159,9 @@ export default function NewAssetPage() {
   if (!isAdminRole(me?.role)) {
     return (
       <div className="bg-red-50 border border-red-200 text-red-800 rounded-xl p-6 shadow-xs max-w-lg mx-auto my-10 text-center space-y-3">
-        <h2 className="text-lg font-bold">Akses Ditolak</h2>
-        <p className="text-sm">Anda tidak memiliki hak akses untuk menambahkan aset baru.</p>
-        <Link href="/assets" className="inline-block bg-red-600 text-white font-semibold px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition shadow-xs">
-          Kembali ke Daftar Aset
-        </Link>
+        <h2 className="text-lg font-bold">{t("Akses Ditolak")}</h2>
+        <p className="text-sm">{t("Anda tidak memiliki hak akses untuk menambahkan aset baru.")}</p>
+        <Link href="/assets" className="inline-block bg-red-600 text-white font-semibold px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition shadow-xs">{t("Kembali ke Daftar Aset")}</Link>
       </div>
     );
   }
@@ -178,38 +175,36 @@ export default function NewAssetPage() {
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 text-sm text-slate-500 mb-3">
-          <Link href="/assets" className="hover:text-indigo-600 hover:underline">Daftar Aset</Link>
+          <Link href="/assets" className="hover:text-indigo-600 hover:underline">{t("Daftar Aset")}</Link>
           <span>/</span>
-          <span className="text-slate-800 font-medium">Tambah Aset Baru</span>
+          <span className="text-slate-800 font-medium">{t("Tambah Aset Baru")}</span>
         </div>
-        <h1 className="page-title">
-          Tambah Aset {selectedDivision?.name ?? ""}
+        <h1 className="page-title">{t("Tambah Aset")}{" "}{selectedDivision?.name ?? ""}
         </h1>
-        <p className="text-slate-500 mt-1">Daftarkan aset baru ke sistem inventaris.</p>
+        <p className="text-slate-500 mt-1">{t("Daftarkan aset baru ke sistem inventaris.")}</p>
       </div>
 
       {/* Form */}
-      <GuideCard title="Isi informasi aset secara bertahap" icon="box">Kolom bertanda * wajib diisi. Pilih kategori dan lokasi yang sesuai, lalu lengkapi stok dan informasi pendukung. Data garansi dan catatan membantu tim menindaklanjuti aset.</GuideCard>
+      <GuideCard title={t("Isi informasi aset secara bertahap")} icon="box">{t("Kolom bertanda * wajib diisi. Pilih kategori dan lokasi yang sesuai, lalu lengkapi stok dan informasi pendukung. Data garansi dan catatan membantu tim menindaklanjuti aset.")}</GuideCard>
       <form onSubmit={handleSubmit} className="space-y-6">
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-800 rounded-xl px-4 py-3 text-sm font-medium">
-            <UiIcon name="warning" className="inline-block align-middle" /> {error}
+            <UiIcon name="warning" className="inline-block align-middle" /> {t(error)}
           </div>
         )}
 
         {/* Informasi Dasar */}
         <div className="ui-panel bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-5">
-          <h2 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3">Informasi Dasar</h2>
+          <h2 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3">{t("Informasi Dasar")}</h2>
 
           {/* Divisi — dipilih SUPER_ADMIN; admin divisi melihat divisinya sebagai label mati */}
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-              Divisi <span className="text-red-500">*</span>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Divisi")}{" "}<span className="text-red-500">*</span>
             </label>
             {isSuperAdmin ? (
               <select
-                name="divisionId" aria-label="Divisi"
+                name="divisionId" aria-label={t("Divisi")}
                 value={form.divisionId}
                 onChange={(e) => {
                   // Kategori milik divisi lama tidak berlaku di divisi baru
@@ -219,7 +214,7 @@ export default function NewAssetPage() {
                 required
                 className={inputClass}
               >
-                <option value="">Pilih Divisi...</option>
+                <option value="">{t("Pilih Divisi...")}</option>
                 {divisions.map((d) => (
                   <option key={d.id} value={d.id}>{d.name}</option>
                 ))}
@@ -227,15 +222,14 @@ export default function NewAssetPage() {
             ) : (
               <div className={lockedClass}>
                 <span><UiIcon name="layers" className="inline-block align-middle" /></span>
-                <span className="truncate">{me?.division?.name ?? "Divisi Anda"}</span>
+                <span className="truncate">{me?.division?.name ?? t("Divisi Anda")}</span>
               </div>
             )}
           </div>
 
           {/* Nama Perangkat */}
           <div>
-            <label htmlFor="assets-new-page-field-1" className="block text-sm font-semibold text-slate-700 mb-1.5">
-              Nama Aset <span className="text-red-500">*</span>
+            <label htmlFor="assets-new-page-field-1" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Nama Aset")}{" "}<span className="text-red-500">*</span>
             </label>
             <input id="assets-new-page-field-1"
               type="text"
@@ -243,7 +237,7 @@ export default function NewAssetPage() {
               value={form.name}
               onChange={handleChange}
               required
-              placeholder="Contoh: Laptop Dell Latitude 3420 / Chiller GEA 1200L"
+              placeholder={t("Contoh: Laptop Dell Latitude 3420 / Chiller GEA 1200L")}
               className={inputClass}
             />
           </div>
@@ -251,8 +245,7 @@ export default function NewAssetPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {/* Kategori — mengikuti divisi */}
             <div>
-              <label htmlFor="assets-new-page-field-2" className="block text-sm font-semibold text-slate-700 mb-1.5">
-                Kategori <span className="text-red-500">*</span>
+              <label htmlFor="assets-new-page-field-2" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Kategori")}{" "}<span className="text-red-500">*</span>
               </label>
               <select id="assets-new-page-field-2"
                 name="categoryId"
@@ -262,23 +255,21 @@ export default function NewAssetPage() {
                 disabled={!selectedDivision}
                 className={`${inputClass} disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                <option value="">{selectedDivision ? "Pilih Kategori..." : "Pilih divisi dulu"}</option>
+                <option value="">{selectedDivision ? t("Pilih Kategori...") : t("Pilih divisi dulu")}</option>
                 {categoryOptions.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
               {selectedDivision && categoryOptions.length === 0 && (
-                <p className="text-xs text-red-500 mt-1">
-                  Divisi ini belum memiliki kategori.{" "}
-                  <Link href="/divisions" className="font-semibold underline">Tambah kategori</Link>
+                <p className="text-xs text-red-500 mt-1">{t("Divisi ini belum memiliki kategori.")}{" "}
+                  <Link href="/divisions" className="font-semibold underline">{t("Tambah kategori")}</Link>
                 </p>
               )}
             </div>
 
             {/* Status — sekaligus menentukan bucket stok awal (src/lib/stock.ts) */}
             <div>
-              <label htmlFor="assets-new-page-field-3" className="block text-sm font-semibold text-slate-700 mb-1.5">
-                Kondisi Stok Awal <span className="text-red-500">*</span>
+              <label htmlFor="assets-new-page-field-3" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Kondisi Stok Awal")}{" "}<span className="text-red-500">*</span>
               </label>
               <select id="assets-new-page-field-3"
                 name="status"
@@ -288,36 +279,34 @@ export default function NewAssetPage() {
                 className={inputClass}
               >
                 {ASSET_STATUSES.map((s) => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
+                  <option key={s.value} value={s.value}>{t(s.label)}</option>
                 ))}
               </select>
-              <p className="text-xs text-slate-400 mt-1">
-                Seluruh stok awal dicatat pada kondisi ini.
-              </p>
+              <p className="text-xs text-slate-400 mt-1">{t("Seluruh stok awal dicatat pada kondisi ini.")}</p>
             </div>
 
             {/* Brand */}
             <div>
-              <label htmlFor="assets-new-page-field-4" className="block text-sm font-semibold text-slate-700 mb-1.5">Brand / Merk</label>
+              <label htmlFor="assets-new-page-field-4" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Brand / Merk")}</label>
               <input id="assets-new-page-field-4"
                 type="text"
                 name="brand"
                 value={form.brand}
                 onChange={handleChange}
-                placeholder="Contoh: Dell, GEA, Daikin"
+                placeholder={t("Contoh: Dell, GEA, Daikin")}
                 className={inputClass}
               />
             </div>
 
             {/* Model */}
             <div>
-              <label htmlFor="assets-new-page-field-5" className="block text-sm font-semibold text-slate-700 mb-1.5">Model / Seri</label>
+              <label htmlFor="assets-new-page-field-5" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Model / Seri")}</label>
               <input id="assets-new-page-field-5"
                 type="text"
                 name="model"
                 value={form.model}
                 onChange={handleChange}
-                placeholder="Contoh: Latitude 3420, FTKC50"
+                placeholder={t("Contoh: Latitude 3420, FTKC50")}
                 className={inputClass}
               />
             </div>
@@ -330,16 +319,15 @@ export default function NewAssetPage() {
                 name="serialNumber"
                 value={form.serialNumber}
                 onChange={handleChange}
-                placeholder="Unik per kategori"
+                placeholder={t("Unik per kategori")}
                 className={`${inputClass} font-mono placeholder:font-sans`}
               />
-              <p className="text-xs text-slate-400 mt-1">Opsional. Jika diisi, harus unik dalam kategori yang sama.</p>
+              <p className="text-xs text-slate-400 mt-1">{t("Opsional. Jika diisi, harus unik dalam kategori yang sama.")}</p>
             </div>
 
             {/* Cabang — outlet tunggal terkunci; beberapa outlet dipilih dari penugasan */}
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                Lokasi Cabang <span className="text-red-500">*</span>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Lokasi Cabang")}{" "}<span className="text-red-500">*</span>
               </label>
               {lockedBranch ? (
                 <>
@@ -347,19 +335,17 @@ export default function NewAssetPage() {
                     <span><UiIcon name="building" className="inline-block align-middle" /></span>
                     <span className="truncate">{lockedBranch.name}</span>
                   </div>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Aset baru otomatis terdaftar di outlet Anda.
-                  </p>
+                  <p className="text-xs text-slate-400 mt-1">{t("Aset baru otomatis terdaftar di outlet Anda.")}</p>
                 </>
               ) : (
                 <select
-                  name="branchId" aria-label="Cabang"
+                  name="branchId" aria-label={t("Cabang")}
                   value={form.branchId}
                   onChange={handleChange}
                   required
                   className={inputClass}
                 >
-                  <option value="">Pilih Cabang...</option>
+                  <option value="">{t("Pilih Cabang...")}</option>
                   {branches.map((b) => (
                     <option key={b.id} value={b.id}>{b.name}</option>
                   ))}
@@ -369,8 +355,7 @@ export default function NewAssetPage() {
 
             {/* Stok */}
             <div>
-              <label htmlFor="assets-new-page-field-7" className="block text-sm font-semibold text-slate-700 mb-1.5">
-                Stok Awal (pcs) <span className="text-red-500">*</span>
+              <label htmlFor="assets-new-page-field-7" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Stok Awal (pcs)")}{" "}<span className="text-red-500">*</span>
               </label>
               <input id="assets-new-page-field-7"
                 type="number"
@@ -381,21 +366,19 @@ export default function NewAssetPage() {
                 required
                 className={inputClass}
               />
-              <p className="text-xs text-slate-400 mt-1">
-                Isi 1 untuk unit tunggal. Untuk barang massal isi jumlahnya — mis. Sumpit Kayu 100 pcs.
-              </p>
+              <p className="text-xs text-slate-400 mt-1">{t("Isi 1 untuk unit tunggal. Untuk barang massal isi jumlahnya — mis. Sumpit Kayu 100 pcs.")}</p>
             </div>
           </div>
 
           {/* Specs */}
           <div>
-            <label htmlFor="assets-new-page-field-8" className="block text-sm font-semibold text-slate-700 mb-1.5">Spesifikasi</label>
+            <label htmlFor="assets-new-page-field-8" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Spesifikasi")}</label>
             <textarea id="assets-new-page-field-8"
               name="specs"
               value={form.specs}
               onChange={handleChange}
               rows={3}
-              placeholder="Contoh: Intel Core i5, RAM 8GB / Kapasitas 1200 liter"
+              placeholder={t("Contoh: Intel Core i5, RAM 8GB / Kapasitas 1200 liter")}
               className={`${inputClass} resize-y`}
             />
           </div>
@@ -403,10 +386,10 @@ export default function NewAssetPage() {
 
         {/* Tanggal & Garansi */}
         <div className="ui-panel bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-5">
-          <h2 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3">Tanggal & Garansi</h2>
+          <h2 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3">{t("Tanggal & Garansi")}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label htmlFor="assets-new-page-field-9" className="block text-sm font-semibold text-slate-700 mb-1.5">Tanggal Pembelian</label>
+              <label htmlFor="assets-new-page-field-9" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Tanggal Pembelian")}</label>
               <input id="assets-new-page-field-9"
                 type="date"
                 name="purchaseDate"
@@ -416,7 +399,7 @@ export default function NewAssetPage() {
               />
             </div>
             <div>
-              <label htmlFor="assets-new-page-field-10" className="block text-sm font-semibold text-slate-700 mb-1.5">Tanggal Garansi Berakhir</label>
+              <label htmlFor="assets-new-page-field-10" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Tanggal Garansi Berakhir")}</label>
               <input id="assets-new-page-field-10"
                 type="date"
                 name="warrantyDate"
@@ -430,20 +413,20 @@ export default function NewAssetPage() {
 
         {/* Catatan Tambahan */}
         <div className="ui-panel bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-5">
-          <h2 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3">Catatan Tambahan</h2>
+          <h2 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3">{t("Catatan Tambahan")}</h2>
           <div>
-            <label htmlFor="assets-new-page-field-11" className="block text-sm font-semibold text-slate-700 mb-1.5">Catatan</label>
+            <label htmlFor="assets-new-page-field-11" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("Catatan")}</label>
             <textarea id="assets-new-page-field-11"
               name="notes"
               value={form.notes}
               onChange={handleChange}
               rows={3}
-              placeholder="Catatan tambahan, kondisi fisik, riwayat perbaikan sebelumnya, dll."
+              placeholder={t("Catatan tambahan, kondisi fisik, riwayat perbaikan sebelumnya, dll.")}
               className={`${inputClass} resize-y`}
             />
           </div>
           <div>
-            <label htmlFor="assets-new-page-field-12" className="block text-sm font-semibold text-slate-700 mb-1.5">URL Foto Perangkat</label>
+            <label htmlFor="assets-new-page-field-12" className="block text-sm font-semibold text-slate-700 mb-1.5">{t("URL Foto Perangkat")}</label>
             <input id="assets-new-page-field-12"
               type="url"
               name="photoUrl"
@@ -460,9 +443,7 @@ export default function NewAssetPage() {
           <Link
             href="/assets"
             className="text-slate-600 font-semibold hover:underline text-sm"
-          >
-            ← Batal & Kembali
-          </Link>
+          >{t("← Batal & Kembali")}</Link>
           <button
             type="submit"
             disabled={isSubmitting}
@@ -470,11 +451,9 @@ export default function NewAssetPage() {
           >
             {isSubmitting ? (
               <>
-                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                Menyimpan...
-              </>
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>{t("Menyimpan...")}</>
             ) : (
-              "💾 Simpan Aset"
+              t("💾 Simpan Aset")
             )}
           </button>
         </div>
