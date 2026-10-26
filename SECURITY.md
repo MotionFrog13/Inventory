@@ -16,8 +16,8 @@ Issues that break **tenant isolation** — reading or changing another organizat
 
 These are known and planned for upcoming releases (see the roadmap in the [README](README.md#roadmap)); reports about them are still welcome if you find a concrete exploit:
 
-- There is no login rate limiting, password reset, or email verification yet. Run the app behind a reverse proxy that provides HTTPS and rate limiting.
-- Publishing through the built-in **Cloudflare Tunnel** puts the login page on the public internet. Until rate limiting lands, add a Cloudflare rate limiting rule for `/api/auth/login` or protect the site with Cloudflare Access. Quick Tunnel addresses (`*.trycloudflare.com`) are meant for trials — anyone with the link reaches the login page. Keep `CLOUDFLARE_TUNNEL_TOKEN` secret and rotate it in the Cloudflare dashboard if it leaks.
+- Login rate limiting is per process: 10 attempts per identity in 15 minutes and 120 attempts globally per minute. Counters reset on restart and are not shared across instances. Password reset and email verification are not implemented. Use HTTPS and a shared or edge rate limiter for public deployments.
+- Publishing through the built-in **Cloudflare Tunnel** puts the login page on the public internet. Add a Cloudflare rate limiting rule for `/api/auth/login` or protect the site with Cloudflare Access. Quick Tunnel addresses (`*.trycloudflare.com`) are meant for trials — anyone with the link reaches the login page. Keep `CLOUDFLARE_TUNNEL_TOKEN` secret and rotate it in the Cloudflare dashboard if it leaks.
 - The Docker volume stores the generated JWT secret and database password in `/data/secrets`. Treat backups of the volume like credentials.
 - `saas` mode has no public sign-up and is not ready for hosting untrusted organizations.
 - The demo seed creates accounts with fixed passwords. Do not run it against a production database, and change or remove those accounts on real installations.

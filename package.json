@@ -8,24 +8,28 @@
     "type": "git",
     "url": "https://github.com/MotionFrog13/Inventory.git"
   },
+  "engines": {
+    "node": "^20.19.0 || ^22.12.0 || >=24.0.0"
+  },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "postinstall": "prisma generate",
     "qa": "ts-node qa-test-runner.ts",
     "test:unit": "node --require ts-node/register --test \"tests/unit/**/*.test.ts\"",
-    "test:integration": "node --env-file=.env --require ts-node/register --test --test-force-exit \"tests/integration/**/*.test.ts\""
+    "test:integration": "node --env-file=.env --require ts-node/register --test --test-force-exit \"tests/integration/**/*.test.ts\"",
+    "test:install": "node scripts/smoke-install.mjs"
   },
   "dependencies": {
-    "@prisma/adapter-pg": "^7.8.0",
-    "@prisma/client": "^7.8.0",
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
     "@types/sharp": "^0.31.1",
     "bcryptjs": "^3.0.3",
     "jsonwebtoken": "^9.0.3",
-    "next": "^16.4.0",
+    "next": "^16.4.3",
     "pg": "^8.22.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
@@ -40,8 +44,8 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "^16.4.0",
-    "prisma": "^7.8.0",
+    "eslint-config-next": "^16.4.3",
+    "prisma": "^7.10.1",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
     "typescript": "^5"

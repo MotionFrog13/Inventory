@@ -1,31 +1,6 @@
-services:
-  postgres:
-    image: postgres:15-alpine
-    container_name: inventory_postgres
-    restart: always
-    environment:
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      POSTGRES_DB: ${DB_NAME:-inventory}
-    ports:
-      - "${DB_PORT:-5432}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: inventory_pgadmin
-    restart: always
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
-    ports:
-      - "${PGADMIN_PORT:-8080}:80"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    depends_on:
-      - postgres
-
-volumes:
-  postgres_data:
-  pgadmin_data:
+# Default install: the complete production app + PostgreSQL in one container.
+# Requires Docker Compose 2.20.0+ (include support).
+# The included project reads optional settings from docker/.env.
+name: inventory
+include:
+  - path: ./docker/compose.prod.yml

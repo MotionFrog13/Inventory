@@ -9,6 +9,7 @@
 Track every item by condition, move stock between outlets with approvals, write off assets with a documented report, and handle damage tickets — all scoped per organization, division, and outlet.
 
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-4f46e5.svg)](LICENSE)
+[![CI](https://github.com/MotionFrog13/Inventory/actions/workflows/ci.yml/badge.svg)](https://github.com/MotionFrog13/Inventory/actions/workflows/ci.yml)
 ![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs)
 ![Prisma 7](https://img.shields.io/badge/Prisma-7-2D3748?logo=prisma)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15%2B-4169E1?logo=postgresql&logoColor=white)
@@ -60,7 +61,35 @@ Track every item by condition, move stock between outlets with approvals, write 
 
 ## Quick start
 
-### With Docker — one container, one click
+### Install for everyday use — Docker only
+
+Install and start Docker Desktop (Windows/macOS), or Docker Engine with Compose **2.20+** (Linux). Internet is needed for the initial image build; local use afterwards does not need Google Fonts or a cloud account. No local Node.js, PostgreSQL, `.env`, or manual migration is required.
+
+Download and extract the [source ZIP](https://github.com/MotionFrog13/Inventory/archive/refs/heads/master.zip), then double-click **`docker-prod.bat`** on Windows. On macOS/Linux, run `bash docker/launch.sh prod` in the extracted folder. The launcher builds the image, starts the app and database, shows the generated admin password, and opens the browser.
+
+With Git and a terminal, the equivalent installation is:
+
+```bash
+git clone https://github.com/MotionFrog13/Inventory.git
+cd Inventory
+docker compose up -d --build --wait --wait-timeout 600
+docker compose logs app
+```
+
+Open **http://localhost:8000**. Sign in as **`superadmin`**, using the random password marked **`Password Super Admin pertama`** in the logs. Change it in **Pengguna**, then create your divisions, categories, outlets and users. Production starts with one organization and one admin, with no demo assets. The first build can take several minutes depending on your connection and computer; wait for the container to become healthy.
+
+Subsequent starts keep the same accounts, database, uploads and secrets in the `inventory_data` volume. Do not delete this volume or use `down -v` on a real installation. [Panduan instalasi Bahasa Indonesia](INSTALL.md) · [Docker, backups and HTTPS](docs/docker.md).
+
+| Task | Command |
+|---|---|
+| Start again | `docker compose up -d --wait --wait-timeout 600` |
+| Stop (keep data) | `docker compose down` |
+| Check status / logs | `docker compose ps` / `docker compose logs --tail 100 app` |
+| Update (back up first) | `git pull --ff-only`, then `docker compose up -d --build --wait --wait-timeout 600` |
+
+If port 8000 is busy, copy `docker/.env.example` to `docker/.env`, set `PROD_PORT=8001`, and start again at http://localhost:8001. To choose your organization and admin details, edit that file **before the first start**. These bootstrap settings do not rename an existing organization or reset its password.
+
+### Docker development and public access
 
 PostgreSQL and the app run together in a single container; only Docker is required.
 
@@ -82,9 +111,9 @@ Secrets (JWT, database password) are generated on first start and kept in a Dock
 ```bash
 git clone https://github.com/MotionFrog13/Inventory.git
 cd Inventory
-npm install
+npm ci
 cp .env.example .env          # then set JWT_SECRET to a long random string
-docker compose up -d          # optional: local PostgreSQL + pgAdmin
+docker compose -f docker/compose.db.yml up -d --wait # optional: local PostgreSQL
 npx prisma migrate deploy     # create the schema
 npx prisma db seed            # demo data — WIPES the whole database
 npm run dev
@@ -144,7 +173,8 @@ All settings live in `.env` (see [`.env.example`](.env.example)). The Docker set
 npm run typecheck && npm run lint && npm run build
 npm run test:unit            # pure functions (scope rules, validation)
 npm run test:integration     # tenant isolation against the development database
-npm run qa                   # 54 HTTP scenarios — needs `npm run dev` and APP_MODE="saas"
+npm run qa                   # HTTP scenarios — needs `npm run dev` and APP_MODE="saas"
+npm run test:install         # isolated production Docker install + persistence smoke test
 QA_ONLY=transfers npm run qa # a single suite
 ```
 
@@ -176,8 +206,8 @@ Known limitations of the current release — see [SECURITY.md](SECURITY.md) for 
 
 1. ✅ **Foundation** — organizations, dynamic divisions & categories, three role tiers, multi-outlet users, tenant-bound database client.
 2. **Cross-division repair tickets** — route a category's tickets to a handling division (e.g. Engineering), assign technicians, track progress and SLA.
-3. **Open-source readiness** — setup wizard (replacing seeded accounts), configurable name/logo/time zone, English & Indonesian UI, login rate limiting.
-4. **Distribution** — ✅ single-container Docker setup for development and production with a backup guide and built-in Cloudflare Tunnel ([docs/docker.md](docs/docker.md)); published image and CI still to come.
+3. **Open-source readiness** — ✅ automatic production bootstrap and login rate limiting; setup wizard, configurable name/logo/time zone, English & Indonesian UI still planned.
+4. **Distribution** — ✅ single-container Docker installation, CI, clean-install testing, backup guide and built-in Cloudflare Tunnel ([docs/docker.md](docs/docker.md)); a published image is still planned.
 5. **SaaS** — public sign-up, email verification & password reset, quotas, platform admin.
 
 Mobile device management (MDM) is disabled until it is redesigned per division.
@@ -212,6 +242,6 @@ Inventory is free software, licensed under the [GNU Affero General Public Licens
 - **Dokumen BAP terlindungi**: disimpan di luar folder publik dan hanya dapat dibuka pengguna yang berhak atas asetnya.
 - **Docker satu kontainer, satu klik** (PostgreSQL sudah termasuk) untuk pengembangan dan produksi, serta **akses publik tanpa VPS** lewat Cloudflare Tunnel bawaan.
 
-**Mulai cepat:** klik dua kali `docker-dev.bat` (pengembangan) atau `docker-prod.bat` (produksi) — PostgreSQL dan aplikasi berjalan dalam satu kontainer Docker, panduannya di [docs/docker.md](docs/docker.md). Untuk dibuka dari internet tanpa VPS, klik dua kali `docker-tunnel.bat` (Cloudflare Tunnel). Tanpa Docker, ikuti [Quick start](#quick-start) di atas atau panduan lengkap di [get-started.md](get-started.md). Aturan arsitektur dan katalog pengujian ada di [CLAUDE.md](CLAUDE.md).
+**Mulai cepat:** [unduh ZIP](https://github.com/MotionFrog13/Inventory/archive/refs/heads/master.zip), ekstrak, lalu klik dua kali `docker-prod.bat`. PostgreSQL, migrasi, organisasi, dan akun admin dengan password acak disiapkan otomatis. Buka http://localhost:8000 dan gunakan password dari launcher. [Panduan instalasi Bahasa Indonesia](INSTALL.md) mencakup login pertama, pengaturan port, update dan penanganan masalah. Untuk pengembangan gunakan `docker-dev.bat`; akses publik HTTPS tersedia lewat `docker-tunnel.bat` ([panduan Docker](docs/docker.md)). Aturan arsitektur dan katalog pengujian ada di [CLAUDE.md](CLAUDE.md).
 
 **Lisensi:** [AGPL-3.0](LICENSE). Bebas dipakai, dimodifikasi, dan di-host sendiri. Bila versi modifikasinya disediakan sebagai layanan daring, kode sumbernya wajib dibagikan dengan lisensi yang sama.

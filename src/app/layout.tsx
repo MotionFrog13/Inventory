@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import AppLayoutClient from "@/components/AppLayoutClient";
 import { Suspense } from "react";
 
 
-const geist = Geist({ variable: "--font-geist", subsets: ["latin"] });
+// Bundled font keeps production builds independent of Google Fonts availability.
+const geist = localFont({
+  src: "./fonts/geist-latin.woff2",
+  variable: "--font-geist",
+  weight: "100 900",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Inventory - Sistem Inventaris Aset",

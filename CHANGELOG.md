@@ -2,6 +2,14 @@
 
 Seluruh perubahan dan catatan rilis untuk proyek **Inventory** didokumentasikan di berkas ini.
 
+## [Unreleased]
+
+- Instalasi utama `docker compose up -d --build --wait --wait-timeout 600` menjalankan aplikasi produksi beserta PostgreSQL, migrasi dan akun admin acak. Konfigurasi database khusus developer dipindahkan ke `docker/compose.db.yml`.
+- README dilengkapi instalasi ZIP/Git, login pertama, update, pengaturan port, dan panduan Bahasa Indonesia (`INSTALL.md`).
+- CI GitHub memeriksa tipe, lint, build, unit, integrasi, HTTP QA, serta instalasi Docker pada volume baru dan persistensi data saat kontainer dibuat ulang.
+- Font Geist disertakan lokal agar build tidak membutuhkan Google Fonts; pemeriksaan tipe menghasilkan tipe route lebih dulu untuk checkout baru.
+- Build produksi memakai webpack untuk mendukung Windows dan Linux secara konsisten; dependensi diperbarui melalui audit keamanan npm.
+
 ## [2.2.0] - 2026-10-01
 > ℹ️ **Upgrade dari 2.1.0**: tidak ada migrasi database. Dokumen BAP lama di `public/uploads` tetap dapat dibuka (kini lewat cek akses); memindahkannya ke `uploads/` bersifat opsional. Tautan `/uploads/...` kini mewajibkan login.
 

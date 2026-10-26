@@ -18,7 +18,7 @@ Dev dan produksi dapat berjalan bersamaan dan datanya terpisah. `docker-tunnel.b
 
 ## 1. Prasyarat
 - **Windows / macOS**: [Docker Desktop](https://www.docker.com/products/docker-desktop/). Launcher `.bat` menyalakan Docker Desktop sendiri bila belum berjalan.
-- **Linux**: Docker Engine dengan plugin Compose v2 (`docker compose version`).
+- **Linux**: Docker Engine dengan plugin Compose v2 (`docker compose version`). Instalasi lewat compose di root membutuhkan Compose **2.20+**.
 
 ## 2. Mode Pengembangan (dev)
 Klik dua kali **`docker-dev.bat`**. Yang terjadi:
@@ -77,7 +77,7 @@ Token bersifat **rahasia**: siapa pun yang memegangnya dapat menjalankan tunnel 
 
 ### Yang perlu diperhatikan
 - **Komputer harus menyala** dan terhubung ke internet; bila tidur atau mati, situs tidak dapat diakses. Matikan mode sleep, dan aktifkan *Start Docker Desktop when you sign in* agar kontainer menyala lagi setelah restart. Putus koneksi sesaat ditangani cloudflared sendiri; bila prosesnya berhenti (mis. token salah), kontainer mencobanya lagi setiap 15 detik tanpa menghentikan aplikasi.
-- **Aplikasi terbuka ke internet.** Ganti password Super Admin awal dan jangan memakai akun demo. Aplikasi belum membatasi percobaan login — untuk domain sendiri, tambahkan aturan *Rate limiting* di Cloudflare (**Security** ➡️ **WAF**) untuk `/api/auth/login`, atau lindungi seluruh situs dengan **Cloudflare Access** (Zero Trust ➡️ **Access** ➡️ **Applications**) agar hanya email yang terdaftar yang dapat membuka halaman login.
+- **Aplikasi terbuka ke internet.** Ganti password Super Admin awal dan jangan memakai akun demo. Pembatasan login tersedia per proses (10 percobaan per identitas/15 menit dan 120 percobaan global/menit); penghitung direset saat restart. Untuk domain sendiri, tambahkan pembatasan di Cloudflare untuk `/api/auth/login`, atau lindungi situs dengan Cloudflare Access.
 - **Mode dev tidak dibuka lewat tunnel**: server dev Next.js menolak aset yang diminta dari domain lain dan tidak dirancang untuk akses publik.
 - Log aktivitas mencatat IP asli pengunjung dari header `CF-Connecting-IP` yang diisi Cloudflare.
 
@@ -119,7 +119,7 @@ Semua data mode produksi ada di volume Docker **`inventory_data`** (`/data` di d
 Backup database dan dokumen BAP:
 
 ```bash
-docker compose -f docker/compose.prod.yml exec -T app pg_dump -U postgres inventory > backup-inventory.sql
+docker compose -f docker/compose.prod.yml exec -T app gosu postgres pg_dump inventory > backup-inventory.sql
 ```
 
 ```bash
@@ -127,6 +127,18 @@ docker compose -f docker/compose.prod.yml cp app:/data/uploads ./backup-uploads
 ```
 
 `/data/secrets` tidak perlu ikut di-backup: instalasi baru membuat rahasia baru, dan pengguna cukup login ulang. Bila Anda mem-backup seluruh volume, perlakukan salinannya seperti kredensial.
+
+Pemulihan backup dilakukan pada instalasi pengganti yang kosong. Simpan instalasi lama dan backup asli sampai hasil pemulihan terverifikasi. Nyalakan instalasi pengganti, salin dump SQL, lalu pulihkan (perintah berikut mengganti data database tujuan):
+
+```bash
+docker compose -f docker/compose.prod.yml cp ./backup-inventory.sql app:/tmp/restore.sql
+docker compose -f docker/compose.prod.yml exec -T app gosu postgres psql -d inventory -v ON_ERROR_STOP=1 -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;' -f /tmp/restore.sql
+docker compose -f docker/compose.prod.yml cp ./backup-uploads/. app:/data/uploads/
+docker compose -f docker/compose.prod.yml exec -T app chown -R node:node /data/uploads
+docker compose -f docker/compose.prod.yml restart app
+```
+
+Saat memulihkan, tutup akses pengguna/tunnel agar tidak ada penulisan baru. Gunakan versi aplikasi yang sesuai backup, pastikan akun dan dokumen BAP bisa dibuka, lalu hapus `/tmp/restore.sql` di dalam kontainer. Dump SQL memuat hash password dan data organisasi; simpan secara privat. Pada PowerShell lama, gunakan `cmd /c` untuk redirect dump SQL agar encoding tidak diubah.
 
 Mengosongkan **seluruh** data (tidak dapat dibatalkan) — ganti `dev` dengan `prod` untuk produksi:
 
@@ -141,4 +153,4 @@ docker compose -f docker/compose.dev.yml down -v
 - **Hot reload tidak jalan**: pastikan `WATCH_POLL_INTERVAL_MS` bukan `0` (Windows/macOS).
 - **Start pertama mode dev lama**: wajar — `npm ci` versi Linux. Start berikutnya cepat.
 - **Linux: file di folder proyek tidak dapat ditulis kontainer dev**: aplikasi berjalan sebagai user `node` (UID 1000); pastikan folder proyek dapat ditulis UID tersebut.
-- `docker-compose.yml` di root hanya berisi PostgreSQL + pgAdmin untuk menjalankan `npm run dev` langsung di host — tidak terkait kontainer di atas.
+- `docker-compose.yml` di root menyertakan konfigurasi produksi yang sama: `docker compose up -d --build --wait --wait-timeout 600`. Konfigurasi PostgreSQL terpisah untuk Node.js di host ada di `docker/compose.db.yml` (tanpa pgAdmin, port hanya di localhost). Volume database lama `inventory_postgres_data` tetap dipakai konfigurasi database terpisah; beralih ke produksi tidak memigrasikan data lama secara otomatis.

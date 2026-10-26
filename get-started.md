@@ -46,7 +46,7 @@ Unduh kode dan pasang dependensinya, lalu salin contoh konfigurasi:
 ```bash
 git clone https://github.com/MotionFrog13/Inventory.git
 cd Inventory
-npm install
+npm ci
 cp .env.example .env
 ```
 
@@ -73,9 +73,9 @@ Jalankan kontainer database PostgreSQL melalui Docker, lalu bangun skema tabel d
 
 ### A. Jalankan PostgreSQL via Docker Compose
 ```bash
-docker compose up -d
+docker compose -f docker/compose.db.yml up -d --wait
 ```
-Verifikasi kontainer berjalan dengan `docker ps`. pgAdmin tersedia di `http://localhost:8080`. Berkas `docker-compose.yml` di root hanya berisi PostgreSQL + pgAdmin untuk jalur tanpa Docker ini — berbeda dari kontainer satu-klik di bagian 0.
+Verifikasi kontainer berjalan dengan `docker ps`. Berkas `docker/compose.db.yml` hanya menyalakan PostgreSQL untuk menjalankan Node.js di host. `docker-compose.yml` di root kini menyalakan seluruh aplikasi produksi; gunakan [INSTALL.md](INSTALL.md) untuk instalasi biasa.
 
 ### B. Terapkan Migrasi Database Prisma
 ```bash

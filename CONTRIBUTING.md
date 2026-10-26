@@ -37,6 +37,7 @@ npm run build
 npm run test:unit
 npm run test:integration
 npm run qa            # with `npm run dev` running and APP_MODE="saas"
+npm run test:install  # clean production Docker install, login, data/upload persistence
 ```
 
 Add or update tests for behavior you change — the QA suites live in `qa/suites/`, unit and integration tests in `tests/`.

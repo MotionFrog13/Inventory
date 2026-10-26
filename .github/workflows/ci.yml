@@ -1,0 +1,71 @@
+name: CI
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: inventory
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d inventory"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/inventory?schema=public
+      JWT_SECRET: ci-only-not-a-production-secret
+      APP_MODE: saas
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: cp .env.example .env
+      - run: npm ci
+      - run: npm audit --audit-level=high
+      - run: npm run typecheck && npm run lint && npm run build
+      - run: npm run test:unit
+      - run: npx prisma migrate deploy
+      - run: npm run test:integration
+      - run: npx prisma db seed
+      - name: HTTP QA against development server
+        shell: bash
+        run: |
+          npm run dev > /tmp/inventory-dev.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 120); do
+            if curl -fsS http://localhost:3000/logo.svg > /dev/null; then break; fi
+            if ! kill -0 "$SERVER_PID" 2>/dev/null; then cat /tmp/inventory-dev.log; exit 1; fi
+            sleep 2
+          done
+          curl -fsS http://localhost:3000/logo.svg > /dev/null
+          npm run qa
+      - name: Server log on failure
+        if: failure()
+        run: cat /tmp/inventory-dev.log 2>/dev/null || true
+
+  install:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      # Intentionally no npm install, .env, Node modules or external database.
+      - run: npm run test:install
